@@ -8,25 +8,27 @@
 
 :root {
   --font-display: 'SBAggro', "Pretendard Variable", Pretendard, "Malgun Gothic", sans-serif;
-  /* 페이지 전체를 어두운 색으로 고정 */
-  color-scheme: dark;
-  --bg: #0d0e11;
-  --surface: #17181d;
-  --text: #e9eaee;
-  --muted: #949aa4;
-  --border: #2a2c33;
+  /* 라이트 그레이 테마 (PC 설정과 상관없이 고정) */
+  color-scheme: light;
+  --bg: #e2e3e6;        /* 페이지 배경 */
+  --surface: #f4f5f7;   /* 대기 칸·버튼·메뉴·색상 창 */
+  --text: #1c1e22;
+  --muted: #6b7079;
+  --border: #c9ccd2;
   --primary: #5b5bf7;
-  --primary-text: #ffffff;
   --danger: #e5484d;
 
-  --board-bg: #15161a;
-  --row-bg: #1f2026;
-  --row-over: #2a2b33;
+  --row-bg: #f4f5f7;    /* 티어 줄 */
+  --row-over: #e3e5ea;  /* 이미지를 끌고 줄 위에 올렸을 때 */
+  --pool-bg: #ebecef;   /* 대기 칸 (티어 줄보다 조금 더 회색) */
+  --pool-over: #dcdee2;
+  --item-bg: #d6d8dd;   /* 이미지가 로딩 중일 때 칸 색 */
+  --gear: #8a8f99;
 
-  --cell: 80px;
-  --label-w: 120px;
-  --radius: 14px;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+  --cell: 84px; /* 이미지 한 칸 크기 */
+  --label-w: 128px;     /* 빌런 이름 칸 폭 */
+  --label-gap: 10px;    /* 이름 칸과 이미지 사이 */
+  --radius: 0;
 }
 
 * { box-sizing: border-box; }
@@ -37,7 +39,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: "Pretendard Variable", Pretendard, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -54,8 +56,8 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 
 .btn {
-  height: 38px;
-  padding: 0 16px;
+  height: 46px;
+  padding: 0 22px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
@@ -66,26 +68,23 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .btn:hover { background: color-mix(in srgb, var(--surface) 90%, var(--text)); }
 .btn:active { transform: scale(.97); }
-.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
-.btn.primary:hover { background: color-mix(in srgb, var(--primary) 88%, #000); }
-.btn.icon { width: 38px; padding: 0; font-size: 18px; }
+.btn.icon { width: 46px; padding: 0; font-size: 20px; }
 
 .menu-wrap { position: relative; }
 .menu {
   position: absolute;
   right: 0;
   bottom: calc(100% + 6px); /* 페이지 아래쪽에 있으니 위로 펼침 */
-  min-width: 170px;
+  min-width: 200px;
   padding: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: var(--shadow);
 }
 .menu button {
   display: block;
   width: 100%;
-  padding: 9px 12px;
+  padding: 11px 14px;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -96,28 +95,29 @@ button, input, textarea { font: inherit; color: inherit; }
 .menu .danger, .pop-buttons .danger { color: var(--danger); }
 
 /* ---------- 본문 ---------- */
+/* 화면 높이 안에서 위아래 가운데에 오도록 (내용이 화면보다 길면 위에서부터 시작) */
 .container {
-  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 1310px; /* 티어 한 줄에 이미지가 12개 들어가는 폭 */
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
-  padding: 24px;
+  padding: 40px 24px;
 }
 
 .board {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px;
-  background: var(--board-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow: hidden;
+  gap: 10px; /* 티어 줄 사이 간격 (뒤판 없이 페이지 배경이 보임) */
 }
 
 .tier {
   display: flex;
-  min-height: calc(var(--cell) + 8px);
+  min-height: var(--cell); /* 티어 이름 칸 높이 = 이미지 한 칸 높이 */
   background: var(--row-bg);
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -131,7 +131,7 @@ button, input, textarea { font: inherit; color: inherit; }
   background: var(--tier-color);
   color: var(--tier-text);
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: 24px;
   font-weight: 500;
   line-height: 1.2;
   text-align: center;
@@ -156,24 +156,27 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .items.over { background: var(--row-over); }
 
+/* 티어 줄 안의 이미지는 여백 없이 붙여서 줄 높이 = 이미지 높이 */
+.tier-items.items { padding: 0 0 0 var(--label-gap); }
+
 .tier-gear {
-  flex: 0 0 40px;
+  flex: 0 0 48px;
   border: 0;
   background: transparent;
-  color: #8a8f99;
-  font-size: 18px;
+  color: var(--gear);
+  font-size: 22px;
   cursor: pointer;
 }
-.tier-gear:hover { color: #fff; background: rgba(255, 255, 255, .05); }
+.tier-gear:hover { color: var(--text); background: rgba(0, 0, 0, .05); }
 
 /* ---------- 이미지 칸 ---------- */
 .item {
   position: relative;
   width: var(--cell);
   height: var(--cell);
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
-  background: #2b2c33;
+  background: var(--item-bg);
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -187,6 +190,8 @@ button, input, textarea { font: inherit; color: inherit; }
   pointer-events: none;
 }
 .item.placeholder { opacity: .3; }
+/* 클릭해서 선택한 이미지 (Delete 키로 삭제) */
+.item.selected { outline: 3px solid #A50000; outline-offset: -3px; } /* A급 빌런 색 */
 
 .ghost {
   position: fixed;
@@ -195,7 +200,6 @@ button, input, textarea { font: inherit; color: inherit; }
   z-index: 100;
   pointer-events: none;
   cursor: grabbing;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
   transform-origin: center;
   scale: 1.06;
 }
@@ -204,61 +208,27 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 
 /* ---------- 대기 칸 ---------- */
 .pool-wrap {
-  margin-top: 64px;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  margin-top: 100px;
 }
-.pool-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-.pool-head h2 { margin: 0; font-size: 16px; }
-.hint { color: var(--muted); font-size: 13px; }
-
+/* 테두리·겹친 상자 없이 티어 줄과 같은 단순한 칸 하나 */
 .pool {
   min-height: calc(var(--cell) + 8px);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface) 94%, var(--text));
+  background: var(--pool-bg);
 }
-.pool.over { background: color-mix(in srgb, var(--surface) 86%, var(--text)); }
-.pool:empty::before {
-  content: "아직 이미지가 없어요. 위의 '이미지 추가' 버튼을 눌러 시작하세요.";
-  margin: auto;
-  padding: 24px 12px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-/* ---------- 휴지통 ---------- */
-.trash {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 50;
-  padding: 18px 26px;
-  border: 2px dashed var(--danger);
-  border-radius: 16px;
-  background: var(--surface);
-  color: var(--danger);
-  font-weight: 700;
-  box-shadow: var(--shadow);
-  transition: transform .12s, background .12s;
-}
-.trash.over { background: var(--danger); color: #fff; transform: scale(1.06); }
+.pool.over { background: var(--pool-over); }
 
 /* ---------- 티어 설정 창 ---------- */
 .popover {
   position: fixed;
   z-index: 60;
-  width: 280px;
+  width: 320px;
   padding: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
 }
-.pop-title { display: block; margin-bottom: 12px; font-family: var(--font-display); font-size: 16px; font-weight: 500; }
-.pop-label { display: block; margin: 0 0 6px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.pop-title { display: block; margin-bottom: 12px; font-family: var(--font-display); font-size: 19px; font-weight: 500; }
+.pop-label { display: block; margin: 0 0 6px; color: var(--muted); font-size: 14px; font-weight: 600; }
 
 .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 10px; }
 .swatch {
@@ -271,7 +241,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 }
 .swatch.selected { border-color: var(--text); }
 
-.custom-color { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 14px; cursor: pointer; }
+.custom-color { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 16px; cursor: pointer; }
 .custom-color input {
   width: 36px;
   height: 36px;
@@ -287,8 +257,8 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
   padding: 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg);
-  font-size: 13px;
+  background: var(--row-bg);
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -305,7 +275,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
   border-radius: 999px;
   background: #222327;
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   opacity: 0;
   transform: translate(-50%, 10px);
   transition: opacity .2s, transform .2s;
@@ -332,11 +302,10 @@ body.file-over::after {
 
 /* ---------- 작은 화면 ---------- */
 @media (max-width: 640px) {
-  :root { --cell: 60px; --label-w: 72px; }
+  :root { --cell: 60px; --label-w: 84px; }
   .actions .btn:not(.icon) { flex: 1; }
-  .pool-wrap { margin-top: 40px; }
+  .pool-wrap { margin-top: 60px; }
   .container { padding: 16px; }
-  .tier-label { font-size: 15px; }
-  .tier-gear { flex-basis: 32px; }
-  .trash { left: 16px; right: 16px; bottom: 16px; text-align: center; }
+  .tier-label { font-size: 17px; }
+  .tier-gear { flex-basis: 36px; }
 }

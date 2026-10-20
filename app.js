@@ -30,7 +30,6 @@
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
   const poolEl = $('pool');
-  const trashEl = $('trash');
   const popEl = $('tier-popover');
   const popTitle = $('pop-title');
   const popColor = $('pop-color');
@@ -161,6 +160,7 @@
     img.alt = '';
     img.draggable = false;
     el.append(img);
+    if (selected.has(id)) el.classList.add('selected');
     return el;
   }
 
@@ -266,6 +266,41 @@
     toast(failed ? `${added}개 추가, ${failed}개는 읽을 수 없었어요.` : `이미지 ${added}개를 추가했어요.`);
   }
 
+  // ---------- 이미지 선택 / Delete 키로 삭제 ----------
+  // 클릭하면 선택, Ctrl(또는 Shift)+클릭이면 여러 개 선택, 빈 곳을 클릭하면 선택 해제
+  const selected = new Set();
+
+  function selectItem(item, additive) {
+    const id = item.dataset.id;
+    if (additive) {
+      if (selected.has(id)) selected.delete(id);
+      else selected.add(id);
+    } else {
+      selected.clear();
+      selected.add(id);
+    }
+    for (const el of document.querySelectorAll('.item')) el.classList.toggle('selected', selected.has(el.dataset.id));
+  }
+
+  function clearSelection() {
+    if (!selected.size) return;
+    selected.clear();
+    for (const el of document.querySelectorAll('.item.selected')) el.classList.remove('selected');
+  }
+
+  function deleteSelected() {
+    const ids = [...selected].filter((id) => state.images[id]);
+    selected.clear();
+    if (!ids.length) return;
+    const gone = new Set(ids);
+    for (const tier of state.tiers) tier.items = tier.items.filter((id) => !gone.has(id));
+    state.pool = state.pool.filter((id) => !gone.has(id));
+    for (const id of ids) delete state.images[id];
+    render();
+    save();
+    toast(ids.length > 1 ? `이미지 ${ids.length}개를 삭제했어요.` : '이미지를 삭제했어요.');
+  }
+
   // ---------- 드래그 앤 드롭 (마우스·터치 공통) ----------
   let drag = null;
 
@@ -278,6 +313,7 @@
       pointerId: e.pointerId,
       startX: e.clientX,
       startY: e.clientY,
+      additive: e.ctrlKey || e.metaKey || e.shiftKey,
       active: false,
       origin: { parent: item.parentNode, next: item.nextSibling },
     };
@@ -296,7 +332,6 @@
     drag.ghost = ghost;
     drag.item.classList.add('placeholder');
     document.body.classList.add('dragging');
-    trashEl.hidden = false;
     closePopover();
   }
 
@@ -339,12 +374,6 @@
     else if (y > window.innerHeight - 70) window.scrollBy(0, 14);
 
     const under = document.elementFromPoint(x, y);
-    drag.overTrash = !!under && trashEl.contains(under);
-    trashEl.classList.toggle('over', drag.overTrash);
-    if (drag.overTrash) {
-      setOver(null);
-      return;
-    }
     // 티어 라벨이나 줄 어디에 놓아도 그 줄로 들어가게
     const zone = under?.closest('.items') || under?.closest('.tier')?.querySelector('.tier-items');
     setOver(zone || null);
@@ -355,22 +384,19 @@
     if (!drag) return;
     const d = drag;
     drag = null;
-    if (!d.active) return;
+    if (!d.active) {
+      // 끌지 않고 그냥 누른 거면 선택
+      if (!cancelled) selectItem(d.item, d.additive);
+      return;
+    }
     d.ghost.remove();
     d.item.classList.remove('placeholder');
     d.overZone?.classList.remove('over');
     document.body.classList.remove('dragging');
-    trashEl.hidden = true;
-    trashEl.classList.remove('over');
 
     if (cancelled) {
       d.origin.parent.insertBefore(d.item, d.origin.next);
       return;
-    }
-    if (d.overTrash) {
-      delete state.images[d.item.dataset.id];
-      d.item.remove();
-      toast('이미지를 삭제했어요.');
     }
     syncFromDom();
   }
@@ -469,11 +495,21 @@
   document.addEventListener('pointerdown', (e) => {
     if (!popEl.hidden && !popEl.contains(e.target) && !e.target.closest('.tier-label, .tier-gear')) closePopover();
     if (!moreMenu.hidden && !e.target.closest('.menu-wrap')) moreMenu.hidden = true;
+    if (!e.target.closest('.item')) clearSelection();
   });
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      // 글자 입력 칸에서 누른 건 무시
+      if (e.target.closest('input, textarea, [contenteditable]')) return;
+      if (!selected.size) return;
+      e.preventDefault();
+      deleteSelected();
+      return;
+    }
     if (e.key !== 'Escape') return;
     if (drag) finishDrag(true);
     closePopover();
+    clearSelection();
     moreMenu.hidden = true;
   });
   window.addEventListener('resize', closePopover);
@@ -566,11 +602,17 @@
     return lines;
   }
 
+  // PNG도 화면과 같은 색이 되도록 style.css의 색을 읽어옴
+  function cssVar(name, fallback) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+  }
+
   async function exportPng() {
     const FONT = 'SBAggro, "Pretendard Variable", Pretendard, "Segoe UI", "Malgun Gothic", sans-serif';
-    const W = 1200, LABEL = 160, CELL = 90, GAP = 4, PAD = 4, ROW_GAP = 4;
+    // W는 한 줄에 이미지가 12개 들어가는 폭
+    const W = 1312, LABEL = 150, LABEL_GAP = 12, CELL = 90, GAP = 4, PAD = 0, ROW_GAP = 10;
     const SCALE = 2;
-    const perRow = Math.floor((W - PAD * 2 - LABEL - GAP * 2 + GAP) / (CELL + GAP));
+    const perRow = Math.floor((W - PAD * 2 - LABEL - LABEL_GAP + GAP) / (CELL + GAP));
 
     // 캔버스는 글꼴이 다 받아진 뒤에 그려야 어그로체로 나옴
     try { await document.fonts?.load('500 20px SBAggro', '가A'); } catch { /* 글꼴 대기 실패는 무시 */ }
@@ -579,7 +621,7 @@
 
     const rows = state.tiers.map((t) => {
       const lines = Math.max(1, Math.ceil(t.items.length / perRow));
-      return { tier: t, h: lines * CELL + (lines - 1) * GAP + PAD * 2 };
+      return { tier: t, h: lines * CELL + (lines - 1) * GAP }; // 줄 높이 = 이미지 높이
     });
     const boardH = rows.reduce((s, r) => s + r.h, 0) + ROW_GAP * (rows.length - 1) + PAD * 2;
     const H = boardH;
@@ -589,7 +631,7 @@
     canvas.height = H * SCALE;
     const ctx = canvas.getContext('2d');
     ctx.scale(SCALE, SCALE);
-    ctx.fillStyle = '#15161a';
+    ctx.fillStyle = cssVar('--bg', '#e2e3e6'); // 뒤판 없이 페이지 배경색
     ctx.fillRect(0, 0, W, H);
 
     let y = PAD;
@@ -597,9 +639,9 @@
       const x = PAD;
       const rowW = W - PAD * 2;
       ctx.save();
-      roundRect(ctx, x, y, rowW, h, 10);
+      roundRect(ctx, x, y, rowW, h, 0);
       ctx.clip();
-      ctx.fillStyle = '#1f2026';
+      ctx.fillStyle = cssVar('--row-bg', '#f4f5f7');
       ctx.fillRect(x, y, rowW, h);
       ctx.fillStyle = tier.color;
       ctx.fillRect(x, y, LABEL, h);
@@ -608,7 +650,7 @@
       ctx.fillStyle = textColorFor(tier.color);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      let size = 26, lines;
+      let size = 30, lines;
       for (; size >= 12; size -= 2) {
         ctx.font = `500 ${size}px ${FONT}`;
         lines = wrapLines(ctx, tier.name, LABEL - 16);
@@ -621,10 +663,10 @@
       tier.items.forEach((id, i) => {
         const img = imgs[id];
         if (!img) return;
-        const cx = x + LABEL + GAP + PAD + (i % perRow) * (CELL + GAP);
-        const cy = y + PAD + Math.floor(i / perRow) * (CELL + GAP);
+        const cx = x + LABEL + LABEL_GAP + (i % perRow) * (CELL + GAP);
+        const cy = y + Math.floor(i / perRow) * (CELL + GAP);
         ctx.save();
-        roundRect(ctx, cx, cy, CELL, CELL, 8);
+        roundRect(ctx, cx, cy, CELL, CELL, 0);
         ctx.clip();
         drawCover(ctx, img, cx, cy, CELL, CELL);
         ctx.restore();

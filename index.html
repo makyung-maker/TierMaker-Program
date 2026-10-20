@@ -11,16 +11,12 @@
   <main class="container">
     <section id="board" class="board" aria-label="티어표"></section>
 
-    <section class="pool-wrap">
-      <div class="pool-head">
-        <h2>대기 칸</h2>
-        <span class="hint">이미지를 끌어서 티어에 놓으세요 · 파일을 이 창에 끌어다 놓거나 Ctrl+V로 붙여넣어도 돼요</span>
-      </div>
+    <section class="pool-wrap" aria-label="대기 칸">
       <div id="pool" class="pool items" data-zone="pool"></div>
     </section>
 
     <div class="actions">
-      <button id="btn-add-images" class="btn primary" type="button">이미지 추가</button>
+      <button id="btn-add-images" class="btn" type="button">이미지 추가</button>
       <button id="btn-save-png" class="btn" type="button">PNG로 저장</button>
       <div class="menu-wrap">
         <button id="btn-more" class="btn icon" type="button" aria-label="더보기" aria-haspopup="true">⋯</button>
@@ -33,7 +29,6 @@
     </div>
   </main>
 
-  <div id="trash" class="trash" hidden>🗑 여기에 놓으면 삭제</div>
 
   <div id="tier-popover" class="popover" hidden role="dialog" aria-label="티어 색상">
     <strong id="pop-title" class="pop-title"></strong>
