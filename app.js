@@ -413,15 +413,7 @@
     } else {
       setOver(zone || null);
       if (zone) placeInZone(zone, x, y);
-    }
-
-    // 대기 칸 양 끝 근처로 끌고 가면 대기 칸이 옆으로 스크롤
-    if (zone === poolEl) {
-      const pr = poolEl.getBoundingClientRect();
-      if (x < pr.left + 60) poolEl.scrollLeft -= 16;
-      else if (x > pr.right - 60) poolEl.scrollLeft += 16;
-    }
-  }
+    }  }
 
   function finishDrag(cancelled) {
     if (!drag) return;
@@ -470,14 +462,6 @@
     clearSelection();
     moreMenu.hidden = true;
   });
-
-  // ---------- 대기 칸 옆으로 스크롤 ----------
-  // 대기 칸 위에서 마우스 휠을 굴리면 위아래 대신 옆으로 넘어감 (넘칠 때만)
-  poolEl.addEventListener('wheel', (e) => {
-    if (poolEl.scrollWidth <= poolEl.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-    e.preventDefault();
-    poolEl.scrollLeft += e.deltaY;
-  }, { passive: false });
 
   // ---------- 이미지 크게 보기 ----------
   // 이미지를 더블클릭하면 화면 가운데에 크게 띄우고, 이미지 바깥 빈 곳을 누르면 닫힘
