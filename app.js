@@ -378,7 +378,8 @@
       if (Math.hypot(x - drag.startX, y - drag.startY) < 5) return;
       startDrag(e);
     }
-    drag.ghost.style.transform = `translate(${x - drag.offX}px, ${y - drag.offY}px)`;
+    // 확대(scale)는 이동(translate) 뒤에 붙여야 위치는 그대로 두고 크기만 커짐
+    drag.ghost.style.transform = `translate(${x - drag.offX}px, ${y - drag.offY}px) scale(1.06)`;
 
     // 화면 끝 근처로 가면 자동으로 스크롤
     if (y < 70) window.scrollBy(0, -14);
@@ -680,12 +681,36 @@
   // ---------- 악마 포인터 ----------
   // 기본 포인터 대신 악마가 마우스 위치에 그대로 붙어 다님. 악마 가운데가 클릭 지점
   const buddy = $('cursor-buddy');
-  const BUDDY_OFFSET_X = -32; // 64px 그림의 가운데를 마우스 위치에 맞춤
-  const BUDDY_OFFSET_Y = -32;
+  const BUDDY_OFFSET_X = -48; // 96px 그림의 가운데를 마우스 위치에 맞춤
+  const BUDDY_OFFSET_Y = -48;
+
+  // 마우스를 움직이는 동안만 두 그림을 번갈아 보여줘서 날갯짓하는 것처럼 보이게 함
+  const BUDDY_FRAMES = ['assets/cursor-buddy.png', 'assets/cursor-buddy-2.png'];
+  const BUDDY_FRAME_MS = 200; // 그림이 바뀌는 간격
+  const BUDDY_STOP_MS = 150;  // 이 시간 동안 안 움직이면 멈춘 것으로 봄
+  BUDDY_FRAMES.forEach((src) => { new Image().src = src; }); // 미리 받아둬서 바뀔 때 깜빡이지 않게
+  let buddyFrame = 0;
+  let buddyFlap = null;
+  let buddyStop = null;
+  function setBuddyFrame(i) {
+    buddyFrame = i;
+    buddy.src = BUDDY_FRAMES[i];
+  }
+
   document.addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
     buddy.style.transform = `translate(${e.clientX + BUDDY_OFFSET_X}px, ${e.clientY + BUDDY_OFFSET_Y}px)`;
     buddy.classList.add('visible');
+
+    if (!buddyFlap) {
+      buddyFlap = setInterval(() => setBuddyFrame(1 - buddyFrame), BUDDY_FRAME_MS);
+    }
+    clearTimeout(buddyStop);
+    buddyStop = setTimeout(() => {
+      clearInterval(buddyFlap);
+      buddyFlap = null;
+      setBuddyFrame(0); // 멈추면 첫 번째 그림으로
+    }, BUDDY_STOP_MS);
   });
   // 마우스가 창 밖으로 나가면 숨김
   document.documentElement.addEventListener('mouseleave', () => buddy.classList.remove('visible'));

@@ -19,10 +19,11 @@
   --reject-bg: #d3d5da;  /* 기각 줄 (다른 줄보다 조금 진한 회색) */
   --reject-over: #c6c9cf;
   --reject-opacity: .5;  /* 기각 이미지 투명도 */
+  --box-alpha: 85%;      /* 칸 배경 불투명도: 뒤 배경의 노이즈가 살짝 비치게 */
   --item-bg: #d6d8dd;   /* 이미지가 로딩 중일 때 칸 색 */
 
-  --cell: 84px; /* 이미지 한 칸 크기 */
-  --label-w: 96px;      /* 티어 이름 칸 폭 */
+  --cell: 120px; /* 이미지 한 칸 크기 */
+  --label-w: 136px;     /* 티어 이름 칸 폭 */
   --label-gap: 10px;    /* 이름 칸과 이미지 사이 */
   --radius: 0;
 }
@@ -39,16 +40,17 @@ html, html * { cursor: none !important; }
   left: 0;
   top: 0;
   z-index: 150;
-  width: 64px;  /* 원본 256px 이미지를 줄여서 보여줌 (어떤 화면에서도 선명) */
-  height: 64px;
+  width: 96px;  /* 원본 256px 이미지를 줄여서 보여줌 (어떤 화면에서도 선명) */
+  height: 96px;
   pointer-events: none;
   opacity: 0;
   transition: opacity .15s;
 }
 .cursor-buddy.visible { opacity: 1; }
 
+/* 페이지 배경: 받은 이미지를 화면에 꽉 차게, 스크롤해도 고정 (불러오기 전에는 회색) */
 body {
-  background: var(--bg);
+  background: var(--bg) url("assets/background.jpg") center / cover no-repeat fixed;
   color: var(--text);
   font-family: var(--font);
   font-size: 17px;
@@ -64,7 +66,7 @@ button, input, textarea { font: inherit; color: inherit; }
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 64px; /* 대기 칸과 버튼 사이 */
+  margin-top: 88px; /* 대기 칸과 버튼 사이 */
 }
 
 /* 버튼은 배경에 묻히도록 테두리·배경 없이 흐린 글자만 (마우스를 올리면 진해짐) */
@@ -112,11 +114,11 @@ button, input, textarea { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  max-width: 1230px; /* 티어 한 줄에 이미지가 12개 들어가는 폭 */
+  max-width: 1744px; /* 티어 한 줄에 이미지가 12개 들어가는 폭 (좌우 여백 포함) */
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 40px 56px; /* 좌우 여백 */
 }
 
 .board {
@@ -139,10 +141,11 @@ button, input, textarea { font: inherit; color: inherit; }
   justify-content: center;
   padding: 8px;
   border: 0;
-  background: var(--tier-base); /* 바닥 네모 (티어별 색, app.js TIERS의 base) */
+  /* 바닥 네모 (티어별 색, app.js TIERS의 base). 살짝 투명해서 배경 노이즈가 비침 */
+  background: color-mix(in srgb, var(--tier-base) var(--box-alpha), transparent);
   color: var(--tier-text);
   font-family: var(--font);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
@@ -156,7 +159,7 @@ button, input, textarea { font: inherit; color: inherit; }
 /* 노토산스는 글자가 줄 높이 가운데보다 살짝 아래에 찍혀서, 육각형 정가운데로 끌어올림 */
 .tier-label span { transform: translateY(-.08em); }
 /* S·A·B·C 한 글자는 조금 더 크게 (기각은 두 글자라 그대로) */
-.tier:not([data-id="reject"]) .tier-label { font-size: 22px; }
+.tier:not([data-id="reject"]) .tier-label { font-size: 30px; }
 
 /* 바닥 네모 가운데의 육각형 (모서리 살짝 둥근 모양은 app.js HEX_PATH) */
 .tier-label .hex {
@@ -185,7 +188,7 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .tier-items {
   flex: 1;
-  background: var(--row-bg);
+  background: color-mix(in srgb, var(--row-bg) var(--box-alpha), transparent);
   transition: background .12s;
 }
 
@@ -200,7 +203,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .items.over { background: var(--row-over); }
 
 /* 기각 줄은 이미지 칸을 어두운 회색으로 */
-.tier[data-id="reject"] .tier-items { background: var(--reject-bg); }
+.tier[data-id="reject"] .tier-items { background: color-mix(in srgb, var(--reject-bg) var(--box-alpha), transparent); }
 .tier[data-id="reject"] .tier-items.over { background: var(--reject-over); }
 .tier[data-id="reject"] .item img { opacity: var(--reject-opacity); } /* 기각된 이미지는 흐리게 */
 
@@ -237,18 +240,17 @@ button, input, textarea { font: inherit; color: inherit; }
   z-index: 100;
   pointer-events: none;
   transform-origin: center;
-  scale: 1.06;
 }
 
 
 /* ---------- 대기 칸 ---------- */
 .pool-wrap {
-  margin-top: 100px;
+  margin-top: 76px;
 }
 /* 테두리·겹친 상자 없이 티어 줄과 같은 단순한 칸 하나 */
 .pool {
   min-height: calc(var(--cell) + 8px);
-  background: var(--pool-bg);
+  background: color-mix(in srgb, var(--pool-bg) var(--box-alpha), transparent);
 }
 .pool.over { background: var(--pool-over); }
 
