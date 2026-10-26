@@ -200,6 +200,8 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 
 .items.over { background: var(--row-over); }
+/* 10장이 꽉 찬 줄 위로 끌고 오면 들어갈 수 없다는 표시 */
+.tier-items.full { outline: 2px solid var(--danger); outline-offset: -2px; }
 
 /* 기각 줄은 이미지 칸을 어두운 회색으로 */
 .tier[data-id="reject"] .tier-items { background: color-mix(in srgb, var(--reject-bg) var(--box-alpha), transparent); }
@@ -252,6 +254,14 @@ button, input, textarea { font: inherit; color: inherit; }
   background: color-mix(in srgb, var(--pool-bg) var(--box-alpha), transparent);
 }
 .pool.over { background: var(--pool-over); }
+/* 대기 칸은 줄바꿈 없이 한 줄로 늘어서고, 넘치면 옆으로 스크롤 */
+.pool.items {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.pool .item { flex: 0 0 auto; }
 
 /* ---------- 알림 / 파일 끌어오기 ---------- */
 .toast {

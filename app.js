@@ -372,6 +372,20 @@
     drag.overZone = zone;
   }
 
+  // 티어 줄 하나에 넣을 수 있는 이미지 수 (대기 칸은 제한 없음)
+  const TIER_MAX = 10;
+  function isTierFull(zone, item) {
+    const count = [...zone.children].filter((c) => c.classList.contains('item') && c !== item).length;
+    return count >= TIER_MAX;
+  }
+  // 꽉 찬 줄 위로 끌고 오면 빨간 테두리로 표시
+  function setFull(zone) {
+    if (drag.fullZone === zone) return;
+    drag.fullZone?.classList.remove('full');
+    zone?.classList.add('full');
+    drag.fullZone = zone;
+  }
+
   function onPointerMove(e) {
     if (!drag || e.pointerId !== drag.pointerId) return;
     const x = e.clientX, y = e.clientY;
@@ -389,8 +403,24 @@
     const under = document.elementFromPoint(x, y);
     // 티어 라벨이나 줄 어디에 놓아도 그 줄로 들어가게
     const zone = under?.closest('.items') || under?.closest('.tier')?.querySelector('.tier-items');
-    setOver(zone || null);
-    if (zone) placeInZone(zone, x, y);
+
+    // 이미 10장이 찬 티어 줄이면 들어가지 않고, 이미지는 원래 자리로 돌아가 있음
+    const full = zone && zone !== poolEl && isTierFull(zone, drag.item);
+    setFull(full ? zone : null);
+    if (full) {
+      setOver(null);
+      if (drag.item.parentNode !== drag.origin.parent) drag.origin.parent.insertBefore(drag.item, drag.origin.next);
+    } else {
+      setOver(zone || null);
+      if (zone) placeInZone(zone, x, y);
+    }
+
+    // 대기 칸 양 끝 근처로 끌고 가면 대기 칸이 옆으로 스크롤
+    if (zone === poolEl) {
+      const pr = poolEl.getBoundingClientRect();
+      if (x < pr.left + 60) poolEl.scrollLeft -= 16;
+      else if (x > pr.right - 60) poolEl.scrollLeft += 16;
+    }
   }
 
   function finishDrag(cancelled) {
@@ -405,7 +435,9 @@
     d.ghost.remove();
     d.item.classList.remove('placeholder');
     d.overZone?.classList.remove('over');
+    d.fullZone?.classList.remove('full');
     document.body.classList.remove('dragging');
+    if (d.fullZone && !cancelled) toast(`한 줄에는 최대 ${TIER_MAX}장까지 넣을 수 있어요.`);
 
     if (cancelled) {
       d.origin.parent.insertBefore(d.item, d.origin.next);
@@ -438,6 +470,14 @@
     clearSelection();
     moreMenu.hidden = true;
   });
+
+  // ---------- 대기 칸 옆으로 스크롤 ----------
+  // 대기 칸 위에서 마우스 휠을 굴리면 위아래 대신 옆으로 넘어감 (넘칠 때만)
+  poolEl.addEventListener('wheel', (e) => {
+    if (poolEl.scrollWidth <= poolEl.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    poolEl.scrollLeft += e.deltaY;
+  }, { passive: false });
 
   // ---------- 이미지 크게 보기 ----------
   // 이미지를 더블클릭하면 화면 가운데에 크게 띄우고, 이미지 바깥 빈 곳을 누르면 닫힘
