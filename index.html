@@ -34,6 +34,10 @@
   <input type="file" id="file-images" accept="image/*" multiple hidden>
   <input type="file" id="file-import" accept=".json,application/json" hidden>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <!-- 이미지를 더블클릭하면 크게 보여주는 창 (빈 곳을 누르거나 Esc로 닫힘) -->
+  <div id="lightbox" class="lightbox" hidden role="dialog" aria-label="이미지 크게 보기">
+    <img id="lightbox-img" alt="">
+  </div>
   <img id="cursor-buddy" class="cursor-buddy" src="assets/cursor-buddy.png" alt="" aria-hidden="true">
 
   <script src="app.js"></script>

@@ -11,7 +11,8 @@
     { id: 'c', name: 'C', color: '#F89494', base: '#F9CDCD' },
     { id: 'reject', name: '기각', color: '#B8BCC4', base: '#D3D5DA' },
   ];
-  const IMAGE_MAX_SIDE = 256; // 저장 용량을 줄이기 위해 이미지 크기를 줄여서 보관
+  // 이미지를 이 크기(긴 변)까지 줄여서 보관. 더블클릭해서 크게 봐도 선명하도록 넉넉하게
+  const IMAGE_MAX_SIDE = 1200; // 1200×1200 원본이 줄어들지 않고 그대로 보관됨
   const FILE_NAME = '티어표'; // PNG·내보내기 파일 이름
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -433,8 +434,30 @@
     }
     if (e.key !== 'Escape') return;
     if (drag) finishDrag(true);
+    closeLightbox();
     clearSelection();
     moreMenu.hidden = true;
+  });
+
+  // ---------- 이미지 크게 보기 ----------
+  // 이미지를 더블클릭하면 화면 가운데에 크게 띄우고, 이미지 바깥 빈 곳을 누르면 닫힘
+  const lightbox = $('lightbox');
+  const lightboxImg = $('lightbox-img');
+  function openLightbox(id) {
+    if (!state.images[id]) return;
+    lightboxImg.src = state.images[id];
+    lightbox.hidden = false;
+  }
+  function closeLightbox() {
+    lightbox.hidden = true;
+    lightboxImg.removeAttribute('src');
+  }
+  document.addEventListener('dblclick', (e) => {
+    const item = e.target.closest('.item');
+    if (item && !item.classList.contains('ghost')) openLightbox(item.dataset.id);
+  });
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox(); // 이미지 자체를 누른 건 무시
   });
 
   // ---------- 이미지 추가 (버튼 / 파일 끌어오기 / 붙여넣기) ----------
