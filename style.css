@@ -1,6 +1,26 @@
+/* 글꼴: 페이퍼로지 (눈누 웹폰트, OFL — 웹사이트·임베딩 사용 가능).
+   본문·버튼은 400·500, 티어 이름은 800 */
+@font-face {
+  font-family: 'Paperozi';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-4Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Paperozi';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Paperozi';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+
 :root {
-  /* 글꼴: Noto Sans KR (구글 웹폰트, 무료·상업 사용 가능) */
-  --font: "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font: "Paperozi", "Malgun Gothic", sans-serif;
   /* 라이트 그레이 테마 (PC 설정과 상관없이 고정) */
   color-scheme: light;
   --bg: #e2e3e6;        /* 페이지 배경 */
@@ -149,7 +169,7 @@ button, input, textarea { font: inherit; color: inherit; }
   color: var(--tier-text);
   font-family: var(--font);
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 800; /* 페이퍼로지 ExtraBold */
   line-height: 1.2;
   text-align: center;
   word-break: keep-all;
@@ -159,8 +179,6 @@ button, input, textarea { font: inherit; color: inherit; }
   --hex-h: calc(var(--cell) * .62);
   --hex-w: calc(var(--hex-h) * .866);
 }
-/* 노토산스는 글자가 줄 높이 가운데보다 살짝 아래에 찍혀서, 육각형 정가운데로 끌어올림 */
-.tier-label span { transform: translateY(-.08em); }
 /* S·A·B·C 한 글자는 조금 더 크게 (기각은 두 글자라 그대로) */
 .tier:not([data-id="reject"]) .tier-label { font-size: 27px; }
 

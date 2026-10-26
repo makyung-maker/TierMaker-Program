@@ -577,15 +577,15 @@
   }
 
   async function exportPng() {
-    const FONT = '"Noto Sans KR", "Malgun Gothic", sans-serif';
+    const FONT = '"Paperozi", "Malgun Gothic", sans-serif';
     // W는 한 줄에 이미지가 12개 들어가는 폭
     const W = 1274, LABEL = 112, LABEL_GAP = 12, CELL = 90, GAP = 4, PAD = 0, ROW_GAP = 10;
     const SCALE = 2;
     const perRow = Math.floor((W - PAD * 2 - LABEL - LABEL_GAP + GAP) / (CELL + GAP));
 
-    // 캔버스는 글꼴이 다 받아진 뒤에 그려야 노토산스로 나옴 (티어 이름 글자를 미리 받아둠)
+    // 캔버스는 글꼴이 다 받아진 뒤에 그려야 페이퍼로지로 나옴 (티어 이름 글자를 미리 받아둠)
     const labelText = TIERS.map((t) => t.name).join('');
-    try { await document.fonts?.load(`700 20px "Noto Sans KR"`, labelText); } catch { /* 글꼴 대기 실패는 무시 */ }
+    try { await document.fonts?.load(`800 20px "Paperozi"`, labelText); } catch { /* 글꼴 대기 실패는 무시 */ }
     const imgs = {};
     await Promise.all(Object.entries(state.images).map(async ([id, src]) => { imgs[id] = await loadImg(src); }));
 
@@ -644,7 +644,7 @@
       ctx.textBaseline = 'alphabetic';
       let size = tier.id === 'reject' ? 20 : 24, lines; // S·A·B·C는 조금 더 크게
       for (; size >= 10; size -= 2) {
-        ctx.font = `700 ${size}px ${FONT}`;
+        ctx.font = `800 ${size}px ${FONT}`;
         lines = wrapLines(ctx, tier.name, hexW * 0.85);
         const fitsHeight = lines.length * size * 1.2 <= hexH * 0.7;
         if (fitsHeight && (lines.length === 1 || size <= 18)) break;
