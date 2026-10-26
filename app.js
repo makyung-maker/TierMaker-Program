@@ -8,7 +8,7 @@
     { id: 'a', name: 'A', color: '#F45252' },
     { id: 'b', name: 'B', color: '#F89494' },
     { id: 'c', name: 'C', color: '#FCCACA' },
-    { id: 'reject', name: '기각', color: '#BBBBBB' },
+    { id: 'reject', name: '기각', color: '#B3B7BF' },
   ];
   const IMAGE_MAX_SIDE = 256; // 저장 용량을 줄이기 위해 이미지 크기를 줄여서 보관
   const FILE_NAME = '티어표'; // PNG·내보내기 파일 이름
