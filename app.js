@@ -2,20 +2,16 @@
 
 (() => {
   // ---------- 기본값 ----------
-  // 티어 줄은 이 5개로 고정 (이름은 바꿀 수 없고 색상만 바꿀 수 있음)
+  // 티어 줄은 이 5개로 고정 (이름과 색상 모두 바꿀 수 없음)
   const TIERS = [
-    { id: 's', name: 'S급 빌런', color: '#EF000C' },
-    { id: 'a', name: 'A급 빌런', color: '#A50000' },
-    { id: 'b', name: 'B급 빌런', color: '#6300A3' },
-    { id: 'c', name: 'C급 빌런', color: '#1B29AF' },
-    { id: 'reject', name: '빌런 기각', color: '#565656' },
-  ];
-  const PALETTE = [
-    '#EF000C', '#A50000', '#6300A3', '#1B29AF', '#565656', '#FFA94D',
-    '#FFD43B', '#8CE99A', '#74C0FC', '#B197FC', '#F783AC', '#E9ECEF',
+    { id: 's', name: 'S', color: '#EF0000' },
+    { id: 'a', name: 'A', color: '#F45252' },
+    { id: 'b', name: 'B', color: '#F89494' },
+    { id: 'c', name: 'C', color: '#FCCACA' },
+    { id: 'reject', name: '기각', color: '#BBBBBB' },
   ];
   const IMAGE_MAX_SIDE = 256; // 저장 용량을 줄이기 위해 이미지 크기를 줄여서 보관
-  const FILE_NAME = '빌런 티어표'; // PNG·내보내기 파일 이름
+  const FILE_NAME = '티어표'; // PNG·내보내기 파일 이름
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
@@ -30,10 +26,6 @@
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
   const poolEl = $('pool');
-  const popEl = $('tier-popover');
-  const popTitle = $('pop-title');
-  const popColor = $('pop-color');
-  const popSwatches = $('pop-swatches');
   const moreMenu = $('more-menu');
   const fileImages = $('file-images');
   const fileImport = $('file-import');
@@ -77,11 +69,9 @@
     });
   }
 
-  let saveTimer = null;
+  // 바뀔 때마다 바로 저장
   let saveWarned = false;
-  async function saveNow() {
-    clearTimeout(saveTimer);
-    saveTimer = null;
+  async function save() {
     try {
       await dbSet('state', state);
     } catch (err) {
@@ -91,16 +81,6 @@
       }
     }
   }
-  // 글자 입력처럼 연속으로 바뀌는 것만 잠깐 모아서 저장하고, 나머지는 바로 저장
-  function save({ debounce = false } = {}) {
-    clearTimeout(saveTimer);
-    if (debounce) saveTimer = setTimeout(saveNow, 300);
-    else saveNow();
-  }
-  // 창을 닫거나 새로고침하기 직전에 남은 변경을 바로 저장
-  const flushSave = () => { if (saveTimer) saveNow(); };
-  window.addEventListener('pagehide', flushSave);
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && flushSave());
 
   // 불러온 데이터가 깨져 있어도 최대한 살려서 사용
   function normalize(raw) {
@@ -117,15 +97,12 @@
       used.add(id);
       return true;
     });
-    // 예전 버전(이름을 바꿀 수 있던 때) 파일은 줄 순서대로 고정 티어에 맞춤
+    // 예전 버전(이름을 바꿀 수 있던 때) 파일은 줄 순서대로 고정 티어에 맞춤.
+    // 이름과 색상은 저장된 값과 상관없이 항상 고정값을 사용
     const isOld = raw.version !== 2;
     const tiers = TIERS.map((base, i) => {
       const src = isOld ? raw.tiers[i] : raw.tiers.find((t) => t && t.id === base.id);
-      return {
-        ...base,
-        color: !isOld && /^#[0-9a-f]{6}$/i.test(src?.color) ? src.color : base.color,
-        items: takeItems(src?.items),
-      };
+      return { ...base, items: takeItems(src?.items) };
     });
     // 고정 티어에 들어가지 못한 이미지는 대기 칸으로
     const pool = takeItems(raw.pool);
@@ -139,16 +116,33 @@
   }
 
   // ---------- 화면 그리기 ----------
-  function textColorFor(hex) {
-    const n = parseInt(hex.slice(1), 16);
-    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#1a1a1a' : '#ffffff';
-  }
+  const LABEL_TEXT = '#000000'; // 티어 이름 글자는 모두 검은색
+
+  // S 칸 양쪽 위 모서리에서 솟은 악마 뿔. 칸 왼쪽 위가 (0,0), 칸 폭이 100인 좌표로 그림
+  // (화면과 PNG에서 같이 씀). 뿔은 칸 바깥으로 위 27, 좌우 5만큼 나감
+  const HORNS_PATH = 'M0 16C-4 6 -4 -6 2 -14Q5 -21 8.5 -26Q9 -8 18.5 0Z '
+    + 'M100 16C104 6 104 -6 98 -14Q95 -21 91.5 -26Q91 -8 81.5 0Z';
+  const HORNS_TOP = 0.27;  // 칸 위로 솟는 높이 (칸 폭 대비)
+  const HORNS_SIDE = 0.05; // 칸 옆으로 튀어나오는 폭 (칸 폭 대비)
 
   function applyLabel(label, tier) {
-    label.textContent = tier.name;
+    label.replaceChildren();
+    if (tier.id === 's') {
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('class', 'horns');
+      svg.setAttribute('viewBox', '-5 -27 110 43');
+      svg.setAttribute('aria-hidden', 'true');
+      const path = document.createElementNS(svgNS, 'path');
+      path.setAttribute('d', HORNS_PATH);
+      svg.append(path);
+      label.append(svg);
+    }
+    const name = document.createElement('span');
+    name.textContent = tier.name;
+    label.append(name);
     label.style.setProperty('--tier-color', tier.color);
-    label.style.setProperty('--tier-text', textColorFor(tier.color));
+    label.style.setProperty('--tier-text', LABEL_TEXT);
   }
 
   function renderItem(id) {
@@ -169,10 +163,8 @@
     row.className = 'tier';
     row.dataset.id = tier.id;
 
-    const label = document.createElement('button');
-    label.type = 'button';
+    const label = document.createElement('div');
     label.className = 'tier-label';
-    label.title = '클릭해서 색상 바꾸기';
     applyLabel(label, tier);
 
     const items = document.createElement('div');
@@ -181,14 +173,7 @@
     items.dataset.id = tier.id;
     items.append(...tier.items.map(renderItem));
 
-    const gear = document.createElement('button');
-    gear.type = 'button';
-    gear.className = 'tier-gear';
-    gear.title = '색상 바꾸기';
-    gear.setAttribute('aria-label', `${tier.name} 색상 바꾸기`);
-    gear.textContent = '⚙';
-
-    row.append(label, items, gear);
+    row.append(label, items);
     return row;
   }
 
@@ -332,7 +317,6 @@
     drag.ghost = ghost;
     drag.item.classList.add('placeholder');
     document.body.classList.add('dragging');
-    closePopover();
   }
 
   function placeInZone(zone, x, y) {
@@ -406,101 +390,14 @@
   document.addEventListener('pointerup', (e) => e.pointerId === drag?.pointerId && finishDrag(false));
   document.addEventListener('pointercancel', (e) => e.pointerId === drag?.pointerId && finishDrag(true));
 
-  // ---------- 티어 설정 창 ----------
-  let popTierId = null;
-  const getPopTier = () => state.tiers.find((t) => t.id === popTierId);
-
-  function renderSwatches(selected) {
-    popSwatches.replaceChildren(...PALETTE.map((c) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'swatch';
-      b.style.setProperty('--c', c);
-      b.dataset.color = c;
-      b.title = c;
-      b.classList.toggle('selected', c.toLowerCase() === selected.toLowerCase());
-      return b;
-    }));
-  }
-
-  function positionPopover(anchor) {
-    const r = anchor.getBoundingClientRect();
-    const pw = popEl.offsetWidth, ph = popEl.offsetHeight;
-    let left = r.right + 8;
-    if (left + pw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - pw - 8);
-    let top = r.top;
-    if (top + ph > window.innerHeight - 8) top = Math.max(8, window.innerHeight - ph - 8);
-    popEl.style.left = `${left}px`;
-    popEl.style.top = `${top}px`;
-  }
-
-  function openPopover(tierId) {
-    popTierId = tierId;
-    const tier = getPopTier();
-    if (!tier) return;
-    popTitle.textContent = tier.name;
-    popColor.value = tier.color.toLowerCase();
-    renderSwatches(tier.color);
-    popEl.hidden = false;
-    positionPopover(boardEl.querySelector(`.tier[data-id="${tierId}"] .tier-label`));
-  }
-
-  function closePopover() {
-    popEl.hidden = true;
-    popTierId = null;
-  }
-
-  function updateTierLabel(tier) {
-    const label = boardEl.querySelector(`.tier[data-id="${tier.id}"] .tier-label`);
-    if (label) applyLabel(label, tier);
-  }
-
-  function setTierColor(color, debounce = false) {
-    const tier = getPopTier();
-    if (!tier) return;
-    tier.color = color;
-    popColor.value = color.toLowerCase();
-    for (const s of popSwatches.children) s.classList.toggle('selected', s.dataset.color.toLowerCase() === color.toLowerCase());
-    updateTierLabel(tier);
-    save({ debounce });
-  }
-
-  boardEl.addEventListener('click', (e) => {
-    const btn = e.target.closest('.tier-label, .tier-gear');
-    if (!btn) return;
-    const id = btn.closest('.tier').dataset.id;
-    if (popTierId === id && !popEl.hidden) closePopover();
-    else openPopover(id);
-  });
-
-  popSwatches.addEventListener('click', (e) => {
-    const s = e.target.closest('.swatch');
-    if (s) setTierColor(s.dataset.color);
-  });
-  popColor.addEventListener('input', () => setTierColor(popColor.value, true));
-
-  popEl.querySelector('.pop-buttons').addEventListener('click', (e) => {
-    const act = e.target.closest('button')?.dataset.act;
-    const tier = getPopTier();
-    if (!act || !tier) return;
-    if (act === 'clear') {
-      state.pool.push(...tier.items);
-      tier.items = [];
-      render();
-      openPopover(tier.id);
-      save();
-    }
-  });
-
   document.addEventListener('pointerdown', (e) => {
-    if (!popEl.hidden && !popEl.contains(e.target) && !e.target.closest('.tier-label, .tier-gear')) closePopover();
     if (!moreMenu.hidden && !e.target.closest('.menu-wrap')) moreMenu.hidden = true;
     if (!e.target.closest('.item')) clearSelection();
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Delete' || e.key === 'Backspace') {
       // 글자 입력 칸에서 누른 건 무시
-      if (e.target.closest('input, textarea, [contenteditable]')) return;
+      if (e.target.closest?.('input, textarea, [contenteditable]')) return;
       if (!selected.size) return;
       e.preventDefault();
       deleteSelected();
@@ -508,11 +405,9 @@
     }
     if (e.key !== 'Escape') return;
     if (drag) finishDrag(true);
-    closePopover();
     clearSelection();
     moreMenu.hidden = true;
   });
-  window.addEventListener('resize', closePopover);
 
   // ---------- 이미지 추가 (버튼 / 파일 끌어오기 / 붙여넣기) ----------
   $('btn-add-images').addEventListener('click', () => fileImages.click());
@@ -521,29 +416,17 @@
     fileImages.value = '';
   });
 
-  let fileDragDepth = 0;
+  // 파일을 창에 끌어다 놓으면 추가 (안내 화면 없이)
   const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
   document.addEventListener('dragenter', (e) => {
-    if (!hasFiles(e)) return;
-    e.preventDefault();
-    fileDragDepth++;
-    document.body.classList.add('file-over');
+    if (hasFiles(e)) e.preventDefault();
   });
   document.addEventListener('dragover', (e) => {
     if (hasFiles(e)) e.preventDefault();
   });
-  document.addEventListener('dragleave', (e) => {
-    if (!hasFiles(e)) return;
-    if (--fileDragDepth <= 0) {
-      fileDragDepth = 0;
-      document.body.classList.remove('file-over');
-    }
-  });
   document.addEventListener('drop', (e) => {
     if (!hasFiles(e)) return;
     e.preventDefault();
-    fileDragDepth = 0;
-    document.body.classList.remove('file-over');
     addFiles(e.dataTransfer.files);
   });
 
@@ -608,14 +491,15 @@
   }
 
   async function exportPng() {
-    const FONT = 'SBAggro, "Pretendard Variable", Pretendard, "Segoe UI", "Malgun Gothic", sans-serif';
+    const FONT = '"Noto Sans KR", "Malgun Gothic", sans-serif';
     // W는 한 줄에 이미지가 12개 들어가는 폭
-    const W = 1312, LABEL = 150, LABEL_GAP = 12, CELL = 90, GAP = 4, PAD = 0, ROW_GAP = 10;
+    const W = 1274, LABEL = 112, LABEL_GAP = 12, CELL = 90, GAP = 4, PAD = 0, ROW_GAP = 16;
     const SCALE = 2;
     const perRow = Math.floor((W - PAD * 2 - LABEL - LABEL_GAP + GAP) / (CELL + GAP));
 
-    // 캔버스는 글꼴이 다 받아진 뒤에 그려야 어그로체로 나옴
-    try { await document.fonts?.load('500 20px SBAggro', '가A'); } catch { /* 글꼴 대기 실패는 무시 */ }
+    // 캔버스는 글꼴이 다 받아진 뒤에 그려야 노토산스로 나옴 (티어 이름 글자를 미리 받아둠)
+    const labelText = TIERS.map((t) => t.name).join('');
+    try { await document.fonts?.load(`700 20px "Noto Sans KR"`, labelText); } catch { /* 글꼴 대기 실패는 무시 */ }
     const imgs = {};
     await Promise.all(Object.entries(state.images).map(async ([id, src]) => { imgs[id] = await loadImg(src); }));
 
@@ -624,35 +508,49 @@
       return { tier: t, h: lines * CELL + (lines - 1) * GAP }; // 줄 높이 = 이미지 높이
     });
     const boardH = rows.reduce((s, r) => s + r.h, 0) + ROW_GAP * (rows.length - 1) + PAD * 2;
-    const H = boardH;
+    // 맨 위 S 칸 뿔이 잘리지 않도록 위쪽과 좌우에 여백을 둠
+    const TOP = LABEL * HORNS_TOP;
+    const SIDE = LABEL * HORNS_SIDE;
+    const H = TOP + boardH;
 
     const canvas = document.createElement('canvas');
-    canvas.width = W * SCALE;
+    canvas.width = (W + SIDE * 2) * SCALE;
     canvas.height = H * SCALE;
     const ctx = canvas.getContext('2d');
     ctx.scale(SCALE, SCALE);
     ctx.fillStyle = cssVar('--bg', '#e2e3e6'); // 뒤판 없이 페이지 배경색
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, W + SIDE * 2, H);
+    ctx.translate(SIDE, 0);
 
-    let y = PAD;
+    let y = TOP + PAD;
     for (const { tier, h } of rows) {
       const x = PAD;
       const rowW = W - PAD * 2;
+      // S 칸은 양쪽 위 모서리에서 같은 색 뿔이 솟음 (뿔 아래쪽은 칸과 겹쳐 이음매가 안 보임)
+      if (tier.id === 's') {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(LABEL / 100, LABEL / 100);
+        ctx.fillStyle = tier.color;
+        ctx.fill(new Path2D(HORNS_PATH));
+        ctx.restore();
+      }
       ctx.save();
       roundRect(ctx, x, y, rowW, h, 0);
       ctx.clip();
-      ctx.fillStyle = cssVar('--row-bg', '#f4f5f7');
-      ctx.fillRect(x, y, rowW, h);
+      // 이미지 칸은 이름 칸과 LABEL_GAP만큼 떨어진 별도 상자
+      ctx.fillStyle = tier.id === 'reject' ? cssVar('--reject-bg', '#d3d5da') : cssVar('--row-bg', '#f4f5f7');
+      ctx.fillRect(x + LABEL + LABEL_GAP, y, rowW - LABEL - LABEL_GAP, h);
       ctx.fillStyle = tier.color;
       ctx.fillRect(x, y, LABEL, h);
 
       // 라벨 글자: 되도록 한 줄에 들어가게 크기를 줄이고, 너무 작아지면 줄바꿈
-      ctx.fillStyle = textColorFor(tier.color);
+      ctx.fillStyle = LABEL_TEXT;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       let size = 30, lines;
       for (; size >= 12; size -= 2) {
-        ctx.font = `500 ${size}px ${FONT}`;
+        ctx.font = `700 ${size}px ${FONT}`;
         lines = wrapLines(ctx, tier.name, LABEL - 16);
         const fitsHeight = lines.length * size * 1.2 <= h - 12;
         if (fitsHeight && (lines.length === 1 || size <= 18)) break;
@@ -668,6 +566,7 @@
         ctx.save();
         roundRect(ctx, cx, cy, CELL, CELL, 0);
         ctx.clip();
+        if (tier.id === 'reject') ctx.globalAlpha = parseFloat(cssVar('--reject-opacity', '.5'));
         drawCover(ctx, img, cx, cy, CELL, CELL);
         ctx.restore();
       });
@@ -714,7 +613,6 @@
     } else if (action === 'reset') {
       if (!confirm('모든 티어와 이미지를 지우고 처음 상태로 돌릴까요?')) return;
       state = defaultState();
-      closePopover();
       render();
       save();
       toast('처음 상태로 돌렸어요.');
@@ -731,7 +629,6 @@
       const hasWork = Object.keys(state.images).length > 0;
       if (hasWork && !confirm('지금 작업 중인 티어표가 불러온 파일로 바뀌어요. 계속할까요?')) return;
       state = next;
-      closePopover();
       render();
       save();
       toast('티어표를 불러왔어요.');

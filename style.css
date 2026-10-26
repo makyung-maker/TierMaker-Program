@@ -1,19 +1,13 @@
-/* 샌드박스 어그로체 (눈누 웹폰트, 웹사이트·임베딩 사용 허용) — 티어 이름에 사용 */
-@font-face {
-  font-family: 'SBAggro';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SBAggroM.woff') format('woff');
-  font-weight: 500;
-  font-display: swap;
-}
-
 :root {
-  --font-display: 'SBAggro', "Pretendard Variable", Pretendard, "Malgun Gothic", sans-serif;
+  /* 글꼴: Noto Sans KR (구글 웹폰트, 무료·상업 사용 가능) */
+  --font: "Noto Sans KR", "Malgun Gothic", sans-serif;
   /* 라이트 그레이 테마 (PC 설정과 상관없이 고정) */
   color-scheme: light;
   --bg: #e2e3e6;        /* 페이지 배경 */
   --surface: #f4f5f7;   /* 대기 칸·버튼·메뉴·색상 창 */
   --text: #1c1e22;
   --muted: #6b7079;
+  --btn-text: #a3a7ae;  /* 아래 버튼 글자 (눈에 덜 띄게) */
   --border: #c9ccd2;
   --primary: #5b5bf7;
   --danger: #e5484d;
@@ -22,11 +16,13 @@
   --row-over: #e3e5ea;  /* 이미지를 끌고 줄 위에 올렸을 때 */
   --pool-bg: #ebecef;   /* 대기 칸 (티어 줄보다 조금 더 회색) */
   --pool-over: #dcdee2;
+  --reject-bg: #d3d5da;  /* 기각 줄 (다른 줄보다 조금 진한 회색) */
+  --reject-over: #c6c9cf;
+  --reject-opacity: .5;  /* 기각 이미지 투명도 */
   --item-bg: #d6d8dd;   /* 이미지가 로딩 중일 때 칸 색 */
-  --gear: #8a8f99;
 
   --cell: 84px; /* 이미지 한 칸 크기 */
-  --label-w: 128px;     /* 빌런 이름 칸 폭 */
+  --label-w: 96px;      /* 티어 이름 칸 폭 */
   --label-gap: 10px;    /* 이름 칸과 이미지 사이 */
   --radius: 0;
 }
@@ -38,7 +34,7 @@ html, body { margin: 0; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Pretendard Variable", Pretendard, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+  font-family: var(--font);
   font-size: 17px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -52,21 +48,23 @@ button, input, textarea { font: inherit; color: inherit; }
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 64px; /* 대기 칸과 버튼 사이 */
 }
 
+/* 버튼은 배경에 묻히도록 테두리·배경 없이 흐린 글자만 (마우스를 올리면 진해짐) */
 .btn {
   height: 46px;
   padding: 0 22px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 10px;
-  background: var(--surface);
-  font-weight: 600;
+  background: transparent;
+  color: var(--btn-text);
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform .08s, background .15s;
+  transition: transform .08s, background .15s, color .15s;
 }
-.btn:hover { background: color-mix(in srgb, var(--surface) 90%, var(--text)); }
+.btn:hover { color: var(--text); background: rgba(0, 0, 0, .04); }
 .btn:active { transform: scale(.97); }
 .btn.icon { width: 46px; padding: 0; font-size: 20px; }
 
@@ -92,7 +90,7 @@ button, input, textarea { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .menu button:hover { background: color-mix(in srgb, var(--surface) 90%, var(--text)); }
-.menu .danger, .pop-buttons .danger { color: var(--danger); }
+.menu .danger { color: var(--danger); }
 
 /* ---------- 본문 ---------- */
 /* 화면 높이 안에서 위아래 가운데에 오도록 (내용이 화면보다 길면 위에서부터 시작) */
@@ -100,7 +98,7 @@ button, input, textarea { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  max-width: 1310px; /* 티어 한 줄에 이미지가 12개 들어가는 폭 */
+  max-width: 1230px; /* 티어 한 줄에 이미지가 12개 들어가는 폭 */
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
@@ -110,15 +108,14 @@ button, input, textarea { font: inherit; color: inherit; }
 .board {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* 티어 줄 사이 간격 (뒤판 없이 페이지 배경이 보임) */
+  gap: 16px; /* 티어 줄 사이 간격 (뒤판 없이 페이지 배경이 보임) */
 }
 
+/* 이름 칸과 이미지 칸은 따로 떨어진 두 상자 (사이로 페이지 배경이 보임) */
 .tier {
   display: flex;
+  gap: var(--label-gap);
   min-height: var(--cell); /* 티어 이름 칸 높이 = 이미지 한 칸 높이 */
-  background: var(--row-bg);
-  border-radius: 0;
-  overflow: hidden;
 }
 
 .tier-label {
@@ -130,19 +127,29 @@ button, input, textarea { font: inherit; color: inherit; }
   border: 0;
   background: var(--tier-color);
   color: var(--tier-text);
-  font-family: var(--font-display);
+  font-family: var(--font);
   font-size: 24px;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1.2;
   text-align: center;
   word-break: keep-all;
-  cursor: pointer;
-  transition: filter .15s;
+  position: relative;
 }
-.tier-label:hover { filter: brightness(1.06); }
+/* S 칸 상자 위로 솟은 악마 뿔 (상자와 같은 색) */
+/* 그림 범위: 칸 왼쪽으로 5%, 위로 27%, 칸 안쪽 아래로 16%까지 (app.js HORNS_PATH 좌표와 맞춤) */
+.tier-label .horns {
+  position: absolute;
+  left: -5%;
+  top: calc(var(--label-w) * -.27);
+  width: 110%;
+  height: calc(var(--label-w) * .43);
+  fill: var(--tier-color);
+  pointer-events: none;
+}
 
 .tier-items {
   flex: 1;
+  background: var(--row-bg);
   transition: background .12s;
 }
 
@@ -156,18 +163,13 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .items.over { background: var(--row-over); }
 
-/* 티어 줄 안의 이미지는 여백 없이 붙여서 줄 높이 = 이미지 높이 */
-.tier-items.items { padding: 0 0 0 var(--label-gap); }
+/* 기각 줄은 이미지 칸을 어두운 회색으로 */
+.tier[data-id="reject"] .tier-items { background: var(--reject-bg); }
+.tier[data-id="reject"] .tier-items.over { background: var(--reject-over); }
+.tier[data-id="reject"] .item img { opacity: var(--reject-opacity); } /* 기각된 이미지는 흐리게 */
 
-.tier-gear {
-  flex: 0 0 48px;
-  border: 0;
-  background: transparent;
-  color: var(--gear);
-  font-size: 22px;
-  cursor: pointer;
-}
-.tier-gear:hover { color: var(--text); background: rgba(0, 0, 0, .05); }
+/* 티어 줄 안의 이미지는 여백 없이 붙여서 줄 높이 = 이미지 높이 */
+.tier-items.items { padding: 0; }
 
 /* ---------- 이미지 칸 ---------- */
 .item {
@@ -191,7 +193,7 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .item.placeholder { opacity: .3; }
 /* 클릭해서 선택한 이미지 (Delete 키로 삭제) */
-.item.selected { outline: 3px solid #A50000; outline-offset: -3px; } /* A급 빌런 색 */
+.item.selected { outline: 3px solid #A50000; outline-offset: -3px; } /* A급 색 */
 
 .ghost {
   position: fixed;
@@ -217,54 +219,6 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 }
 .pool.over { background: var(--pool-over); }
 
-/* ---------- 티어 설정 창 ---------- */
-.popover {
-  position: fixed;
-  z-index: 60;
-  width: 320px;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
-.pop-title { display: block; margin-bottom: 12px; font-family: var(--font-display); font-size: 19px; font-weight: 500; }
-.pop-label { display: block; margin: 0 0 6px; color: var(--muted); font-size: 14px; font-weight: 600; }
-
-.swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 10px; }
-.swatch {
-  aspect-ratio: 1;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  background: var(--c);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12);
-  cursor: pointer;
-}
-.swatch.selected { border-color: var(--text); }
-
-.custom-color { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 16px; cursor: pointer; }
-.custom-color input {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-}
-
-.pop-buttons { display: grid; gap: 6px; }
-.pop-buttons button {
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--row-bg);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.pop-buttons button:hover:not(:disabled) { border-color: var(--muted); }
-.pop-buttons button:disabled { opacity: .4; cursor: default; }
-
 /* ---------- 알림 / 파일 끌어오기 ---------- */
 .toast {
   position: fixed;
@@ -283,29 +237,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-body.file-over::after {
-  content: "여기에 놓으면 이미지가 추가돼요";
-  position: fixed;
-  inset: 12px;
-  z-index: 300;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px dashed var(--primary);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  color: var(--primary);
-  font-size: 22px;
-  font-weight: 700;
-  pointer-events: none;
-}
-
 /* ---------- 작은 화면 ---------- */
 @media (max-width: 640px) {
-  :root { --cell: 60px; --label-w: 84px; }
+  :root { --cell: 60px; --label-w: 64px; }
   .actions .btn:not(.icon) { flex: 1; }
   .pool-wrap { margin-top: 60px; }
   .container { padding: 16px; }
   .tier-label { font-size: 17px; }
-  .tier-gear { flex-basis: 36px; }
 }
