@@ -122,7 +122,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .board {
   display: flex;
   flex-direction: column;
-  gap: 16px; /* 티어 줄 사이 간격 (뒤판 없이 페이지 배경이 보임) */
+  gap: 10px; /* 티어 줄 사이 간격 (뒤판 없이 페이지 배경이 보임) */
 }
 
 /* 이름 칸과 이미지 칸은 따로 떨어진 두 상자 (사이로 페이지 배경이 보임) */
@@ -139,26 +139,48 @@ button, input, textarea { font: inherit; color: inherit; }
   justify-content: center;
   padding: 8px;
   border: 0;
-  background: var(--tier-color);
+  background: var(--tier-base); /* 바닥 네모 (티어별 색, app.js TIERS의 base) */
   color: var(--tier-text);
   font-family: var(--font);
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
   word-break: keep-all;
   position: relative;
+  isolation: isolate;
+  /* 육각형 크기: 높이 = 이미지 한 칸의 62%, 폭은 정육각형 비율 (꼭짓점이 위아래) */
+  --hex-h: calc(var(--cell) * .62);
+  --hex-w: calc(var(--hex-h) * .866);
 }
-/* S 칸 상자 위로 솟은 악마 뿔 (상자와 같은 색) */
-/* 그림 범위: 칸 왼쪽으로 5%, 위로 27%, 칸 안쪽 아래로 16%까지 (app.js HORNS_PATH 좌표와 맞춤) */
-.tier-label .horns {
+/* 노토산스는 글자가 줄 높이 가운데보다 살짝 아래에 찍혀서, 육각형 정가운데로 끌어올림 */
+.tier-label span { transform: translateY(-.08em); }
+/* S·A·B·C 한 글자는 조금 더 크게 (기각은 두 글자라 그대로) */
+.tier:not([data-id="reject"]) .tier-label { font-size: 22px; }
+
+/* 바닥 네모 가운데의 육각형 (모서리 살짝 둥근 모양은 app.js HEX_PATH) */
+.tier-label .hex {
   position: absolute;
-  left: -5%;
-  top: calc(var(--label-w) * -.27);
-  width: 110%;
-  height: calc(var(--label-w) * .43);
+  left: 50%;
+  top: 50%;
+  width: var(--hex-w);
+  height: var(--hex-h);
+  transform: translate(-50%, -50%);
   fill: var(--tier-color);
   pointer-events: none;
+  z-index: -1;
+}
+/* S 칸 육각형 양쪽 어깨(위 모서리)에서 솟은 악마 뿔 (같은 색).
+   app.js HORNS_PATH의 (0,0)이 육각형 왼쪽 어깨, 100이 육각형 폭이 되도록 배치 */
+.tier-label .horns {
+  position: absolute;
+  left: calc(50% - var(--hex-w) * .55);
+  top: calc(50% - var(--hex-h) * .25 - var(--hex-w) * .37);
+  width: calc(var(--hex-w) * 1.1);
+  height: calc(var(--hex-w) * .43);
+  fill: var(--tier-color);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .tier-items {
@@ -254,5 +276,6 @@ button, input, textarea { font: inherit; color: inherit; }
   .actions .btn:not(.icon) { flex: 1; }
   .pool-wrap { margin-top: 60px; }
   .container { padding: 16px; }
-  .tier-label { font-size: 17px; }
+  .tier-label { font-size: 14px; }
+  .tier:not([data-id="reject"]) .tier-label { font-size: 17px; }
 }

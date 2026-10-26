@@ -3,12 +3,13 @@
 (() => {
   // ---------- 기본값 ----------
   // 티어 줄은 이 5개로 고정 (이름과 색상 모두 바꿀 수 없음)
+  // color = 육각형 색, base = 이름 칸 바닥 네모 색
   const TIERS = [
-    { id: 's', name: 'S', color: '#EF0000' },
-    { id: 'a', name: 'A', color: '#F45252' },
-    { id: 'b', name: 'B', color: '#F89494' },
-    { id: 'c', name: 'C', color: '#FCCACA' },
-    { id: 'reject', name: '기각', color: '#C6CAD1' },
+    { id: 's', name: 'S', color: '#EF0000', base: '#680000' },
+    { id: 'a', name: 'A', color: '#EF0000', base: '#B70000' },
+    { id: 'b', name: 'B', color: '#F45252', base: '#F78181' },
+    { id: 'c', name: 'C', color: '#F89494', base: '#F9CDCD' },
+    { id: 'reject', name: '기각', color: '#B8BCC4', base: '#D3D5DA' },
   ];
   const IMAGE_MAX_SIDE = 256; // 저장 용량을 줄이기 위해 이미지 크기를 줄여서 보관
   const FILE_NAME = '티어표'; // PNG·내보내기 파일 이름
@@ -118,30 +119,56 @@
   // ---------- 화면 그리기 ----------
   const LABEL_TEXT = '#000000'; // 티어 이름 글자는 모두 검은색
 
-  // S 칸 양쪽 위 모서리에서 솟은 악마 뿔. 칸 왼쪽 위가 (0,0), 칸 폭이 100인 좌표로 그림
-  // (화면과 PNG에서 같이 씀). 뿔은 칸 바깥으로 위 27, 좌우 5만큼 나감
-  const HORNS_PATH = 'M0 16C-4 6 -4 -6 2 -14Q5 -21 8.5 -26Q9 -8 18.5 0Z '
-    + 'M100 16C104 6 104 -6 98 -14Q95 -21 91.5 -26Q91 -8 81.5 0Z';
-  const HORNS_TOP = 0.27;  // 칸 위로 솟는 높이 (칸 폭 대비)
-  const HORNS_SIDE = 0.05; // 칸 옆으로 튀어나오는 폭 (칸 폭 대비)
+  // S 칸 육각형 위쪽 비스듬한 변에서 솟은 악마 뿔. 육각형 왼쪽 어깨가 (0,0), 육각형 폭이
+  // 100인 좌표로 그림 (화면과 PNG에서 같이 씀). 어깨보다 위로 10, 안쪽으로 17 올라간 자리에
+  // 붙어서, 어깨에서 위로 37까지 솟음
+  const HORNS_PATH = 'M17 6C13 -4 13 -16 19 -24Q22 -31 25.5 -36Q26 -18 35.5 -10Z '
+    + 'M83 6C87 -4 87 -16 81 -24Q78 -31 74.5 -36Q74 -18 64.5 -10Z';
+
+  // 꼭짓점을 반지름 r만큼 둥글린 다각형 경로
+  function roundedPolygonPath(points, r) {
+    const n = points.length;
+    let d = '';
+    points.forEach(([x, y], i) => {
+      const [px, py] = points[(i + n - 1) % n];
+      const [nx, ny] = points[(i + 1) % n];
+      const toward = (tx, ty) => {
+        const len = Math.hypot(tx - x, ty - y);
+        return [x + ((tx - x) * r) / len, y + ((ty - y) * r) / len];
+      };
+      const [ax, ay] = toward(px, py);
+      const [bx, by] = toward(nx, ny);
+      d += `${i ? 'L' : 'M'}${ax.toFixed(2)} ${ay.toFixed(2)}Q${x} ${y} ${bx.toFixed(2)} ${by.toFixed(2)}`;
+    });
+    return `${d}Z`;
+  }
+
+  // 이름 칸 육각형 (꼭짓점이 위아래인 정육각형, 폭 86.6 × 높이 100 좌표, 모서리 살짝 둥글게)
+  const HEX_W = 86.6, HEX_H = 100;
+  const HEX_PATH = roundedPolygonPath(
+    [[43.3, 0], [86.6, 25], [86.6, 75], [43.3, 100], [0, 75], [0, 25]], 3,
+  );
+
+  function svgShape(className, viewBox, d) {
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', className);
+    svg.setAttribute('viewBox', viewBox);
+    svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', d);
+    svg.append(path);
+    return svg;
+  }
 
   function applyLabel(label, tier) {
-    label.replaceChildren();
-    if (tier.id === 's') {
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('class', 'horns');
-      svg.setAttribute('viewBox', '-5 -27 110 43');
-      svg.setAttribute('aria-hidden', 'true');
-      const path = document.createElementNS(svgNS, 'path');
-      path.setAttribute('d', HORNS_PATH);
-      svg.append(path);
-      label.append(svg);
-    }
+    label.replaceChildren(svgShape('hex', `0 0 ${HEX_W} ${HEX_H}`, HEX_PATH));
+    if (tier.id === 's') label.append(svgShape('horns', '-5 -37 110 43', HORNS_PATH));
     const name = document.createElement('span');
     name.textContent = tier.name;
     label.append(name);
     label.style.setProperty('--tier-color', tier.color);
+    label.style.setProperty('--tier-base', tier.base);
     label.style.setProperty('--tier-text', LABEL_TEXT);
   }
 
@@ -493,7 +520,7 @@
   async function exportPng() {
     const FONT = '"Noto Sans KR", "Malgun Gothic", sans-serif';
     // W는 한 줄에 이미지가 12개 들어가는 폭
-    const W = 1274, LABEL = 112, LABEL_GAP = 12, CELL = 90, GAP = 4, PAD = 0, ROW_GAP = 16;
+    const W = 1274, LABEL = 112, LABEL_GAP = 12, CELL = 90, GAP = 4, PAD = 0, ROW_GAP = 10;
     const SCALE = 2;
     const perRow = Math.floor((W - PAD * 2 - LABEL - LABEL_GAP + GAP) / (CELL + GAP));
 
@@ -508,55 +535,68 @@
       return { tier: t, h: lines * CELL + (lines - 1) * GAP }; // 줄 높이 = 이미지 높이
     });
     const boardH = rows.reduce((s, r) => s + r.h, 0) + ROW_GAP * (rows.length - 1) + PAD * 2;
-    // 맨 위 S 칸 뿔이 잘리지 않도록 위쪽과 좌우에 여백을 둠
-    const TOP = LABEL * HORNS_TOP;
-    const SIDE = LABEL * HORNS_SIDE;
-    const H = TOP + boardH;
+    const H = boardH;
 
     const canvas = document.createElement('canvas');
-    canvas.width = (W + SIDE * 2) * SCALE;
+    canvas.width = W * SCALE;
     canvas.height = H * SCALE;
     const ctx = canvas.getContext('2d');
     ctx.scale(SCALE, SCALE);
     ctx.fillStyle = cssVar('--bg', '#e2e3e6'); // 뒤판 없이 페이지 배경색
-    ctx.fillRect(0, 0, W + SIDE * 2, H);
-    ctx.translate(SIDE, 0);
+    ctx.fillRect(0, 0, W, H);
 
-    let y = TOP + PAD;
+    let y = PAD;
     for (const { tier, h } of rows) {
       const x = PAD;
       const rowW = W - PAD * 2;
-      // S 칸은 양쪽 위 모서리에서 같은 색 뿔이 솟음 (뿔 아래쪽은 칸과 겹쳐 이음매가 안 보임)
+
+      // 이름 칸: 티어별 바닥 네모 위 가운데에 작은 정육각형
+      // (꼭짓점이 위아래, 높이 = 이미지 한 칸의 62%, 화면 style.css와 같은 비율)
+      ctx.fillStyle = tier.base;
+      ctx.fillRect(x, y, LABEL, h);
+      const rowBg = tier.id === 'reject' ? cssVar('--reject-bg', '#d3d5da') : cssVar('--row-bg', '#f4f5f7');
+      const hexH = CELL * 0.62, hexW = hexH * 0.866;
+      const hexX = x + (LABEL - hexW) / 2, hexY = y + (h - hexH) / 2;
+      ctx.fillStyle = tier.color;
+      ctx.save();
+      ctx.translate(hexX, hexY);
+      ctx.scale(hexW / HEX_W, hexH / HEX_H);
+      ctx.fill(new Path2D(HEX_PATH));
+      ctx.restore();
+      // S 칸은 육각형 위쪽 변에서 같은 색 뿔이 솟음 (화면 style.css .horns와 같은 배치)
       if (tier.id === 's') {
         ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(LABEL / 100, LABEL / 100);
-        ctx.fillStyle = tier.color;
+        ctx.translate(hexX, hexY + hexH * 0.25);
+        ctx.scale(hexW / 100, hexW / 100);
         ctx.fill(new Path2D(HORNS_PATH));
         ctx.restore();
       }
+
       ctx.save();
       roundRect(ctx, x, y, rowW, h, 0);
       ctx.clip();
       // 이미지 칸은 이름 칸과 LABEL_GAP만큼 떨어진 별도 상자
-      ctx.fillStyle = tier.id === 'reject' ? cssVar('--reject-bg', '#d3d5da') : cssVar('--row-bg', '#f4f5f7');
+      ctx.fillStyle = rowBg;
       ctx.fillRect(x + LABEL + LABEL_GAP, y, rowW - LABEL - LABEL_GAP, h);
-      ctx.fillStyle = tier.color;
-      ctx.fillRect(x, y, LABEL, h);
 
-      // 라벨 글자: 되도록 한 줄에 들어가게 크기를 줄이고, 너무 작아지면 줄바꿈
+      // 라벨 글자: 육각형 안에 들어가게 크기를 줄이고, 너무 작아지면 줄바꿈
       ctx.fillStyle = LABEL_TEXT;
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      let size = 30, lines;
-      for (; size >= 12; size -= 2) {
+      ctx.textBaseline = 'alphabetic';
+      let size = tier.id === 'reject' ? 20 : 24, lines; // S·A·B·C는 조금 더 크게
+      for (; size >= 10; size -= 2) {
         ctx.font = `700 ${size}px ${FONT}`;
-        lines = wrapLines(ctx, tier.name, LABEL - 16);
-        const fitsHeight = lines.length * size * 1.2 <= h - 12;
+        lines = wrapLines(ctx, tier.name, hexW * 0.85);
+        const fitsHeight = lines.length * size * 1.2 <= hexH * 0.7;
         if (fitsHeight && (lines.length === 1 || size <= 18)) break;
       }
       const lh = size * 1.2;
-      lines.forEach((ln, i) => ctx.fillText(ln, x + LABEL / 2, y + h / 2 + (i - (lines.length - 1) / 2) * lh));
+      // 글자 실제 모양(잉크)의 위아래 가운데가 줄 자리 가운데에 오도록 기준선을 계산
+      lines.forEach((ln, i) => {
+        const m = ctx.measureText(ln);
+        const midY = y + h / 2 + (i - (lines.length - 1) / 2) * lh;
+        ctx.fillText(ln, x + LABEL / 2, midY + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
+      });
 
       tier.items.forEach((id, i) => {
         const img = imgs[id];
