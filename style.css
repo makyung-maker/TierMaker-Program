@@ -30,6 +30,22 @@
 * { box-sizing: border-box; }
 
 html, body { margin: 0; }
+/* 기본 마우스 포인터는 숨기고, 악마 캐릭터(.cursor-buddy)가 포인터 역할을 함 */
+html, html * { cursor: none !important; }
+
+/* 마우스 포인터 대신 보이는 악마 캐릭터 (마우스를 쓸 때만 보임, 가운데가 클릭 지점) */
+.cursor-buddy {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 150;
+  width: 64px;  /* 원본 256px 이미지를 줄여서 보여줌 (어떤 화면에서도 선명) */
+  height: 64px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.cursor-buddy.visible { opacity: 1; }
 
 body {
   background: var(--bg);
@@ -61,7 +77,6 @@ button, input, textarea { font: inherit; color: inherit; }
   color: var(--btn-text);
   font-weight: 500;
   white-space: nowrap;
-  cursor: pointer;
   transition: transform .08s, background .15s, color .15s;
 }
 .btn:hover { color: var(--text); background: rgba(0, 0, 0, .04); }
@@ -87,7 +102,6 @@ button, input, textarea { font: inherit; color: inherit; }
   border-radius: 8px;
   background: none;
   text-align: left;
-  cursor: pointer;
 }
 .menu button:hover { background: color-mix(in srgb, var(--surface) 90%, var(--text)); }
 .menu .danger { color: var(--danger); }
@@ -179,7 +193,6 @@ button, input, textarea { font: inherit; color: inherit; }
   border-radius: 0;
   overflow: hidden;
   background: var(--item-bg);
-  cursor: grab;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -201,12 +214,10 @@ button, input, textarea { font: inherit; color: inherit; }
   top: 0;
   z-index: 100;
   pointer-events: none;
-  cursor: grabbing;
   transform-origin: center;
   scale: 1.06;
 }
 
-body.dragging, body.dragging * { cursor: grabbing !important; }
 
 /* ---------- 대기 칸 ---------- */
 .pool-wrap {

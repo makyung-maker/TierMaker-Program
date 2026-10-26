@@ -8,7 +8,7 @@
     { id: 'a', name: 'A', color: '#F45252' },
     { id: 'b', name: 'B', color: '#F89494' },
     { id: 'c', name: 'C', color: '#FCCACA' },
-    { id: 'reject', name: '기각', color: '#B3B7BF' },
+    { id: 'reject', name: '기각', color: '#C6CAD1' },
   ];
   const IMAGE_MAX_SIDE = 256; // 저장 용량을 줄이기 위해 이미지 크기를 줄여서 보관
   const FILE_NAME = '티어표'; // PNG·내보내기 파일 이름
@@ -636,6 +636,19 @@
       toast('티어메이커 파일이 아니거나 손상된 파일이에요.');
     }
   });
+
+  // ---------- 악마 포인터 ----------
+  // 기본 포인터 대신 악마가 마우스 위치에 그대로 붙어 다님. 악마 가운데가 클릭 지점
+  const buddy = $('cursor-buddy');
+  const BUDDY_OFFSET_X = -32; // 64px 그림의 가운데를 마우스 위치에 맞춤
+  const BUDDY_OFFSET_Y = -32;
+  document.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    buddy.style.transform = `translate(${e.clientX + BUDDY_OFFSET_X}px, ${e.clientY + BUDDY_OFFSET_Y}px)`;
+    buddy.classList.add('visible');
+  });
+  // 마우스가 창 밖으로 나가면 숨김
+  document.documentElement.addEventListener('mouseleave', () => buddy.classList.remove('visible'));
 
   // ---------- 시작 ----------
   (async () => {
