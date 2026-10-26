@@ -443,11 +443,22 @@
   // 이미지를 더블클릭하면 화면 가운데에 크게 띄우고, 이미지 바깥 빈 곳을 누르면 닫힘
   const lightbox = $('lightbox');
   const lightboxImg = $('lightbox-img');
+  // 원래 크기와 상관없이 화면(가로 90%, 세로 88%)에 꽉 맞게 키우거나 줄여서 보여줌
+  function fitLightboxImage() {
+    const nw = lightboxImg.naturalWidth, nh = lightboxImg.naturalHeight;
+    if (!nw || !nh) return;
+    const scale = Math.min((window.innerWidth * 0.9) / nw, (window.innerHeight * 0.88) / nh);
+    lightboxImg.style.width = `${Math.round(nw * scale)}px`;
+    lightboxImg.style.height = `${Math.round(nh * scale)}px`;
+  }
   function openLightbox(id) {
     if (!state.images[id]) return;
+    lightboxImg.onload = fitLightboxImage;
     lightboxImg.src = state.images[id];
     lightbox.hidden = false;
+    if (lightboxImg.complete) fitLightboxImage();
   }
+  window.addEventListener('resize', () => { if (!lightbox.hidden) fitLightboxImage(); });
   function closeLightbox() {
     lightbox.hidden = true;
     lightboxImg.removeAttribute('src');

@@ -16,20 +16,21 @@
     <section class="pool-wrap" aria-label="대기 칸">
       <div id="pool" class="pool items" data-zone="pool"></div>
     </section>
+  </main>
 
-    <div class="actions">
-      <button id="btn-add-images" class="btn" type="button">이미지 추가</button>
-      <button id="btn-save-png" class="btn" type="button">PNG로 저장</button>
-      <div class="menu-wrap">
-        <button id="btn-more" class="btn icon" type="button" aria-label="더보기" aria-haspopup="true">⋯</button>
-        <div id="more-menu" class="menu" hidden>
-          <button type="button" data-action="export">파일로 내보내기</button>
-          <button type="button" data-action="import">파일 불러오기</button>
-          <button type="button" data-action="reset" class="danger">처음부터 다시</button>
-        </div>
+  <!-- 버튼은 첫 화면(티어표+대기 칸) 아래에 있어서, 스크롤해야 보임 -->
+  <div class="actions">
+    <button id="btn-add-images" class="btn" type="button">이미지 추가</button>
+    <button id="btn-save-png" class="btn" type="button">PNG로 저장</button>
+    <div class="menu-wrap">
+      <button id="btn-more" class="btn icon" type="button" aria-label="더보기" aria-haspopup="true">⋯</button>
+      <div id="more-menu" class="menu" hidden>
+        <button type="button" data-action="export">파일로 내보내기</button>
+        <button type="button" data-action="import">파일 불러오기</button>
+        <button type="button" data-action="reset" class="danger">처음부터 다시</button>
       </div>
     </div>
-  </main>
+  </div>
 
   <input type="file" id="file-images" accept="image/*" multiple hidden>
   <input type="file" id="file-import" accept=".json,application/json" hidden>

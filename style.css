@@ -19,12 +19,12 @@
   --reject-bg: #d3d5da;  /* 기각 줄 (다른 줄보다 조금 진한 회색) */
   --reject-over: #c6c9cf;
   --reject-opacity: .5;  /* 기각 이미지 투명도 */
-  --box-alpha: 85%;      /* 칸 배경 불투명도: 뒤 배경의 노이즈가 살짝 비치게 */
+  --box-alpha: 100%;     /* 칸 배경 불투명도 (100% = 투명하지 않음) */
   --item-bg: #d6d8dd;   /* 이미지가 로딩 중일 때 칸 색 */
 
-  --cell: 120px; /* 이미지 한 칸 크기 */
-  --label-w: 136px;     /* 티어 이름 칸 폭 */
-  --label-gap: 10px;    /* 이름 칸과 이미지 사이 */
+  --cell: 117px; /* 이미지 한 칸 크기 */
+  --label-w: 126px;     /* 티어 이름 칸 폭 */
+  --label-gap: 9px;     /* 이름 칸과 이미지 사이 */
   --radius: 0;
 }
 
@@ -48,12 +48,11 @@ html, html * { cursor: none !important; }
 }
 .cursor-buddy.visible { opacity: 1; }
 
-/* 페이지 배경: 받은 이미지를 화면에 꽉 차게, 스크롤해도 고정 (불러오기 전에는 회색) */
 body {
-  background: var(--bg) url("assets/background.jpg") center / cover no-repeat fixed;
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: 17px;
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -66,13 +65,13 @@ button, input, textarea { font: inherit; color: inherit; }
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 88px; /* 대기 칸과 버튼 사이 */
+  padding: 8px 0 48px; /* 첫 화면 바로 아래에 붙고, 맨 아래에 여유 */
 }
 
 /* 버튼은 배경에 묻히도록 테두리·배경 없이 흐린 글자만 (마우스를 올리면 진해짐) */
 .btn {
-  height: 46px;
-  padding: 0 22px;
+  height: 41px;
+  padding: 0 20px;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -83,14 +82,14 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .btn:hover { color: var(--text); background: rgba(0, 0, 0, .04); }
 .btn:active { transform: scale(.97); }
-.btn.icon { width: 46px; padding: 0; font-size: 20px; }
+.btn.icon { width: 41px; padding: 0; font-size: 18px; }
 
 .menu-wrap { position: relative; }
 .menu {
   position: absolute;
   right: 0;
   bottom: calc(100% + 6px); /* 페이지 아래쪽에 있으니 위로 펼침 */
-  min-width: 200px;
+  min-width: 180px;
   padding: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -114,17 +113,17 @@ button, input, textarea { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  max-width: 1744px; /* 티어 한 줄에 이미지가 12개 들어가는 폭 (좌우 여백 포함) */
+  max-width: 1570px; /* 티어 한 줄에 이미지가 10개 들어가는 폭 (좌우 여백 포함) */
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 40px 56px; /* 좌우 여백 */
+  padding: 36px 108px; /* 좌우 여백 */
 }
 
 .board {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* 티어 줄 사이 간격 (뒤판 없이 페이지 배경이 보임) */
+  gap: 9px; /* 티어 줄 사이 간격 (뒤판 없이 페이지 배경이 보임) */
 }
 
 /* 이름 칸과 이미지 칸은 따로 떨어진 두 상자 (사이로 페이지 배경이 보임) */
@@ -145,7 +144,7 @@ button, input, textarea { font: inherit; color: inherit; }
   background: color-mix(in srgb, var(--tier-base) var(--box-alpha), transparent);
   color: var(--tier-text);
   font-family: var(--font);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
@@ -159,7 +158,7 @@ button, input, textarea { font: inherit; color: inherit; }
 /* 노토산스는 글자가 줄 높이 가운데보다 살짝 아래에 찍혀서, 육각형 정가운데로 끌어올림 */
 .tier-label span { transform: translateY(-.08em); }
 /* S·A·B·C 한 글자는 조금 더 크게 (기각은 두 글자라 그대로) */
-.tier:not([data-id="reject"]) .tier-label { font-size: 30px; }
+.tier:not([data-id="reject"]) .tier-label { font-size: 27px; }
 
 /* 바닥 네모 가운데의 육각형 (모서리 살짝 둥근 모양은 app.js HEX_PATH) */
 .tier-label .hex {
@@ -245,7 +244,7 @@ button, input, textarea { font: inherit; color: inherit; }
 
 /* ---------- 대기 칸 ---------- */
 .pool-wrap {
-  margin-top: 76px;
+  margin-top: 68px;
 }
 /* 테두리·겹친 상자 없이 티어 줄과 같은 단순한 칸 하나 */
 .pool {
@@ -284,11 +283,7 @@ button, input, textarea { font: inherit; color: inherit; }
   background: rgba(10, 10, 12, .9);
 }
 .lightbox[hidden] { display: none; }
-.lightbox img {
-  max-width: min(90vw, 1200px);
-  max-height: 88vh;
-  object-fit: contain;
-}
+.lightbox img { display: block; } /* 크기는 app.js fitLightboxImage가 화면에 맞게 정함 */
 
 /* ---------- 작은 화면 ---------- */
 @media (max-width: 640px) {
