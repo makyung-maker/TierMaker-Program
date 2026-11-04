@@ -744,8 +744,8 @@
 
   // 마우스를 움직이는 동안만 두 그림을 번갈아 보여줘서 날갯짓하는 것처럼 보이게 함
   const BUDDY_FRAMES = ['assets/cursor-buddy.png', 'assets/cursor-buddy-2.png'];
-  const BUDDY_FRAME_MS = 200; // 그림이 바뀌는 간격
-  const BUDDY_STOP_MS = 150;  // 이 시간 동안 안 움직이면 멈춘 것으로 봄
+  const BUDDY_FRAME_MS = 110; // 그림이 바뀌는 간격
+  const BUDDY_STOP_MS = 250;  // 이 시간 동안 안 움직이면 멈춘 것으로 봄
   BUDDY_FRAMES.forEach((src) => { new Image().src = src; }); // 미리 받아둬서 바뀔 때 깜빡이지 않게
   let buddyFrame = 0;
   let buddyFlap = null;
@@ -761,6 +761,7 @@
     buddy.classList.add('visible');
 
     if (!buddyFlap) {
+      setBuddyFrame(1); // 움직이기 시작하자마자 날개를 내려서, 짧게 움직여도 펄럭이는 게 보이게
       buddyFlap = setInterval(() => setBuddyFrame(1 - buddyFrame), BUDDY_FRAME_MS);
     }
     clearTimeout(buddyStop);
