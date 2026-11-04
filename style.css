@@ -44,7 +44,7 @@
   --cell: 117px; /* 이미지 한 칸 크기 */
   --label-w: 126px;     /* 티어 이름 칸 폭 */
   --label-gap: 9px;     /* 이름 칸과 이미지 사이 */
-  --row-pad: 6px;       /* 티어 줄 테두리와 이미지 사이 */
+  --row-pad: 3px;       /* 티어 줄 테두리와 이미지 사이 */
   --radius: 0;
 }
 
@@ -135,7 +135,8 @@ button, input, textarea { font: inherit; color: inherit; }
 .container {
   display: flex;
   flex-direction: column;
-  max-width: 1570px; /* 티어 한 줄에 이미지가 10개 들어가는 폭 (좌우 여백 포함) */
+  /* 티어 한 줄에 이미지가 딱 10개 들어가는 폭 = 이름 칸 + 사이 + 이미지 10장 + 사이 9번 + 줄 안쪽 여백 + 좌우 여백 */
+  max-width: calc(var(--label-w) + var(--label-gap) + 10 * (var(--cell) - var(--row-pad) * 2) + 9 * 4px + var(--row-pad) * 2 + 216px);
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
