@@ -39,12 +39,12 @@
   --reject-bg: #d3d5da;  /* 기각 줄 (다른 줄보다 조금 진한 회색) */
   --reject-over: #c6c9cf;
   --reject-opacity: .5;  /* 기각 이미지 투명도 */
-  --box-alpha: 100%;     /* 칸 배경 불투명도 (100% = 투명하지 않음) */
   --item-bg: #d6d8dd;   /* 이미지가 로딩 중일 때 칸 색 */
 
   --cell: 117px; /* 이미지 한 칸 크기 */
   --label-w: 126px;     /* 티어 이름 칸 폭 */
   --label-gap: 9px;     /* 이름 칸과 이미지 사이 */
+  --row-pad: 6px;       /* 티어 줄 테두리와 이미지 사이 */
   --radius: 0;
 }
 
@@ -68,8 +68,9 @@ html, html * { cursor: none !important; }
 }
 .cursor-buddy.visible { opacity: 1; }
 
+/* 페이지 배경: 스프레이 그림 한 장을 화면에 꽉 채우고, 스크롤해도 제자리에 고정 */
 body {
-  background: var(--bg);
+  background: var(--bg) url("assets/background.jpg") center / cover no-repeat fixed;
   color: var(--text);
   font-family: var(--font);
   font-size: 15px;
@@ -164,8 +165,8 @@ button, input, textarea { font: inherit; color: inherit; }
   justify-content: center;
   padding: 8px;
   border: 0;
-  /* 바닥 네모 (티어별 색, app.js TIERS의 base). 살짝 투명해서 배경 노이즈가 비침 */
-  background: color-mix(in srgb, var(--tier-base) var(--box-alpha), transparent);
+  /* 바닥 네모 색 (티어별, app.js TIERS의 base). 실제 칠은 아래 "손으로 칠한 칸" 규칙이 함 */
+  --paper: var(--tier-base);
   color: var(--tier-text);
   font-family: var(--font);
   font-size: 22px;
@@ -209,8 +210,9 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .tier-items {
   flex: 1;
-  background: color-mix(in srgb, var(--row-bg) var(--box-alpha), transparent);
-  transition: background .12s;
+  --paper: var(--row-bg);
+  position: relative;
+  isolation: isolate;
 }
 
 .items {
@@ -221,17 +223,19 @@ button, input, textarea { font: inherit; color: inherit; }
   padding: 4px;
 }
 
-.items.over { background: var(--row-over); }
+.items.over { --paper: var(--row-over); }
 /* 10장이 꽉 찬 줄 위로 끌고 오면 들어갈 수 없다는 표시 */
 .tier-items.full { outline: 2px solid var(--danger); outline-offset: -2px; }
 
-/* 기각 줄은 이미지 칸을 어두운 회색으로 */
-.tier[data-id="reject"] .tier-items { background: color-mix(in srgb, var(--reject-bg) var(--box-alpha), transparent); }
-.tier[data-id="reject"] .tier-items.over { background: var(--reject-over); }
+/* 기각 줄 */
+.tier[data-id="reject"] .tier-items { --paper: var(--reject-bg); }
+.tier[data-id="reject"] .tier-items.over { --paper: var(--reject-over); }
 .tier[data-id="reject"] .item img { opacity: var(--reject-opacity); } /* 기각된 이미지는 흐리게 */
 
-/* 티어 줄 안의 이미지는 여백 없이 붙여서 줄 높이 = 이미지 높이 */
-.tier-items.items { padding: 0; }
+/* 티어 줄 안의 이미지는 칠한 면의 물결 테두리 안쪽에 들어가도록 살짝 띄우고,
+   그만큼 이미지를 줄여서 줄 높이 = 이름 칸 높이로 유지 */
+.tier-items.items { padding: var(--row-pad); }
+.tier-items .item { width: calc(var(--cell) - var(--row-pad) * 2); height: calc(var(--cell) - var(--row-pad) * 2); }
 
 /* ---------- 이미지 칸 ---------- */
 .item {
@@ -273,9 +277,61 @@ button, input, textarea { font: inherit; color: inherit; }
 /* 테두리·겹친 상자 없이 티어 줄과 같은 단순한 칸 하나 */
 .pool {
   min-height: calc(var(--cell) + 8px);
-  background: color-mix(in srgb, var(--pool-bg) var(--box-alpha), transparent);
+  --paper: var(--pool-bg);
+  position: relative;
+  isolation: isolate;
 }
-.pool.over { background: var(--pool-over); }
+.pool.over { --paper: var(--pool-over); }
+
+/* ---------- 손으로 칠한 칸 ----------
+   이름 칸·이미지 칸·대기 칸의 색을 칸 뒤에 따로 칠해서, 칠한 면에만 효과를 줌
+   (안에 들어간 이미지·글자·육각형은 그대로 선명).
+   - 물결 테두리: 붓으로 칠한 듯 살짝 물결치는 매끈한 모양(mask)으로 오려냄.
+     모양이 선(벡터)이라 가장자리가 계단처럼 깨지지 않음
+   - 스프레이 질감: 밝은 칸에만 index.html의 #grain 필터로 옅은 입자를 얹음 */
+.tier-label::before,
+.tier-items::before,
+.pool::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-color: var(--paper);
+}
+/* 정사각형에 가까운 이름 칸 */
+.tier-label::before {
+  -webkit-mask: var(--brush-mask) center / 100% 100% no-repeat;
+  mask: var(--brush-mask) center / 100% 100% no-repeat;
+}
+/* 직접 그린 이름 칸 이미지(티어마다 한 장): 테두리·육각형·뿔·글자가 모두 그림에 들어 있어서
+   mask 없이 그대로 깔고, 코드로 그리던 육각형·뿔·글자는 숨김 (글자는 화면 읽기용으로 남김) */
+.tier .tier-label::before {
+  background: var(--label-img) center / 100% 100% no-repeat;
+  -webkit-mask: none;
+  mask: none;
+}
+.tier[data-id="s"] { --label-img: url("assets/label-s.png"); }
+.tier[data-id="a"] { --label-img: url("assets/label-a.png"); }
+.tier[data-id="b"] { --label-img: url("assets/label-b.png"); }
+.tier[data-id="c"] { --label-img: url("assets/label-c.png"); }
+.tier[data-id="reject"] { --label-img: url("assets/label-reject.png"); }
+.tier .tier-label .hex,
+.tier .tier-label .horns { visibility: hidden; }
+.tier .tier-label span { color: transparent; }
+/* 가로로 긴 이미지 칸·대기 칸: 길이에 맞춰 물결 간격을 넓게 잡은 모양 + 옅은 입자 */
+.tier-items::before,
+.pool::before {
+  -webkit-mask: var(--brush-mask-wide) center / 100% 100% no-repeat;
+  mask: var(--brush-mask-wide) center / 100% 100% no-repeat;
+  filter: url(#grain);
+}
+/* 물결 테두리가 위아래로 2~3px 안쪽에 그려져서, 꽉 찬 이름 칸 그림보다 낮아 보이지 않게 그만큼 키움 */
+.tier-items::before { inset: -3px 0; }
+:root {
+  --brush-mask-wide: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M3 2.6 C120 1.2 230 3.4 350 2.2 C470 1 590 3.2 710 2 C820 1 910 3 997 1.8 C996 25 998.5 50 996.8 75 C996 88 998 94 997 98.4 C880 99.4 760 97.6 640 98.8 C520 99.7 400 97.8 280 98.9 C170 99.6 80 98 3.2 98.8 C4.2 75 1.8 50 3.6 25 C4.4 14 2.2 7 3 2.6 Z' fill='%23000'/%3E%3C/svg%3E");
+  --brush-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M1.5 2.8 C14 1.2 26 3.4 38 2.1 C52 0.8 63 3.2 76 1.9 C86 1 93 2.6 98.6 1.6 C97.6 14 99.3 27 98.4 40 C97.5 53 99.4 66 98.3 79 C97.7 88 99.1 94 98.2 98.5 C85 99.4 72 97.6 58 98.7 C45 99.6 32 97.8 19 98.9 C11 99.4 5 98.1 1.4 98.8 C2.4 86 0.7 73 1.9 60 C2.8 47 0.9 34 2.1 21 C2.6 13 1.1 7 1.5 2.8 Z' fill='%23000'/%3E%3C/svg%3E");
+}
 
 /* ---------- 알림 / 파일 끌어오기 ---------- */
 .toast {

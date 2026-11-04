@@ -7,6 +7,21 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- 칸 위에 얹는 스프레이 질감 (style.css의 밝은 칸 배경에서 filter: url(#grain)으로 사용).
+       가장자리 물결은 style.css의 mask(매끈한 선 모양)가 담당 -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <!-- 스프레이 입자: 1px 점이 아니라 살짝 번진 작은 점으로, 노이즈가 진한 곳에만 듬성듬성 -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.45" numOctaves="1" seed="3" result="grain"/>
+      <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.8 0 0 0 -0.46" result="specksRaw"/>
+      <feGaussianBlur in="specksRaw" stdDeviation="0.4" result="specks"/>
+      <feComposite in="specks" in2="SourceGraphic" operator="in" result="specksInShape"/>
+      <feMerge>
+        <feMergeNode in="SourceGraphic"/>
+        <feMergeNode in="specksInShape"/>
+      </feMerge>
+    </filter>
+  </svg>
   <main class="container">
     <section id="board" class="board" aria-label="티어표"></section>
 
